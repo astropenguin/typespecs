@@ -22,5 +22,13 @@ class Spec(dict[str, Any]):
 
 
 def is_spec(obj: Any, /) -> TypeGuard[Spec]:
-    """Check if given object is a type specification."""
+    """Check if given object is a type specification.
+
+    Args:
+        obj: The object to inspect.
+
+    Returns:
+        True if the object is a type specification. False otherwise.
+
+    """
     return isinstance(obj, Spec)
