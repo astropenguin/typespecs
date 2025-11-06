@@ -37,7 +37,7 @@ def gen_subtypes(obj: Any, /) -> Iterator[Any]:
         obj: The object to inspect.
 
     Yields:
-        The subtypes of the given object.
+        The subtypes of the object.
 
     """
     if is_literal(annotated := get_annotated(obj)):
@@ -54,7 +54,7 @@ def get_annotated(obj: Any, /, *, recursive: bool = False) -> Any:
         recursive: Whether to recursively strip all annotations.
 
     Returns:
-        The bare type of the given object.
+        The bare type of the object.
 
     """
     if recursive:
@@ -70,7 +70,7 @@ def get_annotations(obj: Any, /) -> list[Any]:
         obj: The object to inspect.
 
     Returns:
-        List of all type annotations of the given object.
+        List of all type annotations of the object.
 
     """
     return [*get_args(obj)[1:]] if is_annotated(obj) else []
@@ -83,7 +83,7 @@ def is_annotated(obj: Any, /) -> bool:
         obj: The object to inspect.
 
     Returns:
-        True if the given object is an annotated type. False otherwise.
+        True if the object is an annotated type. False otherwise.
 
     """
     return get_origin(obj) is Annotated
@@ -96,7 +96,7 @@ def is_literal(obj: Any, /) -> bool:
         obj: The object to inspect.
 
     Returns:
-        True if the given object is a literal type. False otherwise.
+        True if the object is a literal type. False otherwise.
 
     """
     return get_origin(obj) is Literal
