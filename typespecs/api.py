@@ -1,9 +1,8 @@
-__all__ = ["Attr", "from_dataclass", "from_typehint", "is_attr"]
+__all__ = ["Attrs", "from_dataclass", "from_typehint", "is_attrs"]
 
 
 # standard library
-from collections.abc import Hashable
-from dataclasses import dataclass, fields, replace
+from dataclasses import fields
 from typing import Annotated as Ann, Any
 
 
@@ -13,28 +12,15 @@ from .typing import DataClass, gen_subtypes, get_annotated, get_annotations
 from typing_extensions import Self, TypeGuard
 
 
-@dataclass(frozen=True)
-class Attr:
-    """Typespec attribute.
-
-    Args:
-        key: Attribute key.
-        value: Attribute value. <NA> indicates a key-only attribute.
-
-    """
-
-    key: Hashable
-    """Attribute key."""
-
-    value: Any = pd.NA
-    """Attribute value. <NA> indicates a key-only attribute."""
+class Attrs(dict[str, Any]):
+    """Typespec attributes."""
 
     def fillna(self, value: Any, /) -> Self:
-        """Fill missing attribute value with given value."""
-        if self.value is pd.NA:
-            return replace(self, value=value)
-        else:
-            return replace(self)
+        """Fill missing attribute values with given value."""
+        return type(self)(
+            (key, value if current is pd.NA else current)
+            for key, current in self.items()
+        )
 
 
 def from_dataclass(obj: DataClass, /, merge: bool = True) -> pd.DataFrame:
@@ -54,7 +40,7 @@ def from_dataclass(obj: DataClass, /, merge: bool = True) -> pd.DataFrame:
         data = getattr(obj, field.name, field.default)
         specs.append(
             from_typehint(
-                Ann[field.type, Attr("data", data)],
+                Ann[field.type, Attrs(data=data)],
                 index=field.name,
                 merge=merge,
             )
@@ -81,13 +67,13 @@ def from_typehint(
         The resulting typespec DataFrame.
 
     """
-    attrs: dict[Hashable, Any] = {}
+    attrs = Attrs()
     specs: list[pd.DataFrame] = []
     annotated = get_annotated(obj, recursive=True)
-    annotations = get_annotations(Ann[obj, Attr("type")])
+    annotations = get_annotations(Ann[obj, Attrs(type=pd.NA)])
 
-    for attr in filter(is_attr, annotations):
-        attrs[attr.key] = attr.fillna(annotated).value
+    for attrs_ in filter(is_attrs, annotations):
+        attrs.update(attrs_.fillna(annotated))
 
     specs.append(
         pd.DataFrame(
@@ -112,6 +98,6 @@ def from_typehint(
         return pd.concat(specs)
 
 
-def is_attr(obj: Any, /) -> TypeGuard[Attr]:
-    """Check if given object is a typespec attribute."""
-    return isinstance(obj, Attr)
+def is_attrs(obj: Any, /) -> TypeGuard[Attrs]:
+    """Check if given object is a typespec attributes."""
+    return isinstance(obj, Attrs)
