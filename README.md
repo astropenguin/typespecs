@@ -5,15 +5,15 @@ Data specifications by type hints
 
 ```python
 from dataclasses import dataclass
-from typespecs import Attrs, from_dataclass
+from typespecs import Spec, from_dataclass
 from typing import Annotated as Ann
 
 
 @dataclass
 class Weather:
-    temp: Ann[list[float], Attrs(kind="data", name="Temperature", units="K")]
-    wind: Ann[list[float], Attrs(kind="data", name="Wind speed", units="m/s")]
-    loc: Ann[str, Attrs(kind="meta", name="Observed location")]
+    temp: Ann[list[float], Spec(kind="data", name="Temperature", units="K")]
+    wind: Ann[list[float], Spec(kind="data", name="Wind speed", units="m/s")]
+    loc: Ann[str, Spec(kind="meta", name="Observed location")]
 
 
 weather = Weather([273.15, 280.15], [5.0, 10.0], "Tokyo")
