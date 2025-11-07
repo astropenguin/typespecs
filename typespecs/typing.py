@@ -33,11 +33,11 @@ def get_annotated(obj: Any, /, *, recursive: bool = False) -> Any:
     """Return the bare type if given object is an annotated type.
 
     Args:
-        obj: The object to inspect.
+        obj: Object to inspect.
         recursive: Whether to recursively strip all annotations.
 
     Returns:
-        The bare type of the object.
+        Bare type of the object.
 
     """
     if recursive:
@@ -50,7 +50,7 @@ def get_annotations(obj: Any, /) -> list[Any]:
     """Return all type annotations of given object.
 
     Args:
-        obj: The object to inspect.
+        obj: Object to inspect.
 
     Returns:
         List of all type annotations of the object.
@@ -63,7 +63,7 @@ def get_subtypes(obj: Any, /) -> list[Any]:
     """Return all subtypes of given object.
 
     Args:
-        obj: The object to inspect.
+        obj: Object to inspect.
 
     Returns:
         List of all subtypes of the object.
@@ -79,7 +79,7 @@ def is_annotated(obj: Any, /) -> bool:
     """Check if given object is an annotated type.
 
     Args:
-        obj: The object to inspect.
+        obj: Object to inspect.
 
     Returns:
         True if the object is an annotated type. False otherwise.
@@ -92,7 +92,7 @@ def is_literal(obj: Any, /) -> bool:
     """Check if given object is a literal type.
 
     Args:
-        obj: The object to inspect.
+        obj: Object to inspect.
 
     Returns:
         True if the object is a literal type. False otherwise.

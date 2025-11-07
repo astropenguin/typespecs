@@ -66,7 +66,7 @@ class SpecFrameAccessor:
 
         Returns:
             Specification column with the given key.
-            If the key does not exist, a Series filled with NA
+            If the key does not exist, a Series filled with <NA>
             will be returned instead of a KeyError being raised.
 
         """
@@ -77,14 +77,14 @@ class SpecFrameAccessor:
                 data=pd.NA,
                 index=self.accessed.index,
                 name=key,
-        )
+            )
 
 
 def is_spec(obj: Any, /) -> TypeGuard[Spec]:
     """Check if given object is a type specification.
 
     Args:
-        obj: The object to inspect.
+        obj: Object to inspect.
 
     Returns:
         True if the object is a type specification. False otherwise.

@@ -26,7 +26,7 @@ def from_dataclass(
         merge: Whether to merge all subtypes into a single row.
 
     Returns:
-        The created specification DataFrame.
+        Created specification DataFrame.
 
     """
     frames: list[pd.DataFrame] = []
@@ -62,7 +62,7 @@ def from_typehint(
         merge: Whether to merge all subtypes into a single row.
 
     Returns:
-        The created specification DataFrame.
+        Created specification DataFrame.
 
     """
     annotated = get_annotated(obj, recursive=True)
