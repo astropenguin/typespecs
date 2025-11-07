@@ -12,11 +12,17 @@ from .spec import Spec, is_spec
 from .typing import DataClass, gen_subtypes, get_annotated, get_annotations
 
 
-def from_dataclass(obj: DataClass, /, merge: bool = True) -> pd.DataFrame:
+def from_dataclass(
+    obj: DataClass,
+    /,
+    cast: bool = True,
+    merge: bool = True,
+) -> pd.DataFrame:
     """Create a specification DataFrame from given dataclass instance.
 
     Args:
         obj: The dataclass instance to convert.
+        cast: Whether to convert column dtypes to nullable ones.
         merge: Whether to merge all subtypes into a single row.
 
     Returns:
@@ -30,6 +36,7 @@ def from_dataclass(obj: DataClass, /, merge: bool = True) -> pd.DataFrame:
         frames.append(
             from_typehint(
                 Annotated[field.type, Spec(data=data)],
+                cast=cast,
                 index=field.name,
                 merge=merge,
             )
@@ -42,6 +49,7 @@ def from_typehint(
     obj: Any,
     /,
     *,
+    cast: bool = True,
     index: str = "root",
     merge: bool = True,
 ) -> pd.DataFrame:
@@ -49,6 +57,7 @@ def from_typehint(
 
     Args:
         obj: The type hint to convert.
+        cast: Whether to convert column dtypes to nullable ones.
         index: Root index of the created specification DataFrame.
         merge: Whether to merge all subtypes into a single row.
 
@@ -64,18 +73,21 @@ def from_typehint(
     for spec in filter(is_spec, annotations):
         specs.update(spec.fillna(annotated))
 
-    frames.append(
-        pd.DataFrame(
-            columns=list(specs.keys()),
-            data=[list(specs.values())],
+    frame = pd.DataFrame(
+        data={key: [value] for key, value in specs.items()},
             index=pd.Index([index], name="index"),
-        ).convert_dtypes(),
     )
+
+    if cast:
+        frames.append(frame.convert_dtypes())
+    else:
+        frames.append(frame)
 
     for subindex, subtype in enumerate(gen_subtypes(obj)):
         frames.append(
             from_typehint(
                 subtype,
+                cast=cast,
                 index=f"{index}.{subindex}",
                 merge=False,
             )
