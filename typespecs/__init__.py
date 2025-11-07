@@ -1,9 +1,9 @@
 __all__ = [
     "Spec",
+    "SpecFrame",
     "api",
     "from_dataclass",
     "from_typehint",
-    "is_spec",
     "spec",
     "typing",
 ]
@@ -11,8 +11,6 @@ __version__ = "0.3.0"
 
 
 # dependencies
-from . import api
-from . import spec
-from . import typing
+from . import api, spec, typing
 from .api import from_dataclass, from_typehint
-from .spec import Spec, is_spec
+from .spec import Spec, SpecFrame

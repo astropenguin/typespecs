@@ -8,7 +8,7 @@ from typing import Annotated, Any
 
 # dependencies
 import pandas as pd
-from .spec import Spec, is_spec
+from .spec import Spec, SpecFrame, is_spec, to_specframe
 from .typing import DataClass, get_annotated, get_annotations, get_subtypes
 
 
@@ -17,7 +17,7 @@ def from_dataclass(
     /,
     cast: bool = True,
     merge: bool = True,
-) -> pd.DataFrame:
+) -> SpecFrame:
     """Create a specification DataFrame from given dataclass instance.
 
     Args:
@@ -42,7 +42,7 @@ def from_dataclass(
             )
         )
 
-    return pd.concat(frames)
+    return to_specframe(pd.concat(frames))
 
 
 def from_typehint(
@@ -52,7 +52,7 @@ def from_typehint(
     cast: bool = True,
     index: str = "root",
     merge: bool = True,
-) -> pd.DataFrame:
+) -> SpecFrame:
     """Create a specification DataFrame from given type hint.
 
     Args:
@@ -94,6 +94,6 @@ def from_typehint(
         )
 
     if merge:
-        return pd.concat(frames).bfill().head(1)
+        return to_specframe(pd.concat(frames)).bfill().head(1)
     else:
-        return pd.concat(frames)
+        return to_specframe(pd.concat(frames))
