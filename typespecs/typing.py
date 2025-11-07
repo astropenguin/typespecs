@@ -1,15 +1,14 @@
 __all__ = [
     "DataClass",
-    "gen_subtypes",
     "get_annotated",
     "get_annotations",
+    "get_subtypes",
     "is_annotated",
     "is_literal",
 ]
 
 
 # standard library
-from collections.abc import Iterator
 from dataclasses import Field
 from typing import Annotated, Any, ClassVar, Literal, Protocol
 from typing import _strip_annotations  # type: ignore
@@ -30,22 +29,6 @@ DataClass = DataClassInstance | type[DataClassInstance]
 """Type hint for any data class or data-class instance."""
 
 
-def gen_subtypes(obj: Any, /) -> Iterator[Any]:
-    """Generate subtypes if given object is a generic type.
-
-    Args:
-        obj: The object to inspect.
-
-    Yields:
-        The subtypes of the object.
-
-    """
-    if is_literal(annotated := get_annotated(obj)):
-        yield
-    else:
-        yield from get_args(annotated)
-
-
 def get_annotated(obj: Any, /, *, recursive: bool = False) -> Any:
     """Return the bare type if given object is an annotated type.
 
@@ -64,7 +47,7 @@ def get_annotated(obj: Any, /, *, recursive: bool = False) -> Any:
 
 
 def get_annotations(obj: Any, /) -> list[Any]:
-    """Get all type annotations of given object.
+    """Return all type annotations of given object.
 
     Args:
         obj: The object to inspect.
@@ -74,6 +57,22 @@ def get_annotations(obj: Any, /) -> list[Any]:
 
     """
     return [*get_args(obj)[1:]] if is_annotated(obj) else []
+
+
+def get_subtypes(obj: Any, /) -> list[Any]:
+    """Return all subtypes of given object.
+
+    Args:
+        obj: The object to inspect.
+
+    Returns:
+        List of all subtypes of the object.
+
+    """
+    if is_literal(annotated := get_annotated(obj)):
+        return []
+    else:
+        return list(get_args(annotated))
 
 
 def is_annotated(obj: Any, /) -> bool:

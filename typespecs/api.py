@@ -9,7 +9,7 @@ from typing import Annotated, Any
 # dependencies
 import pandas as pd
 from .spec import Spec, is_spec
-from .typing import DataClass, gen_subtypes, get_annotated, get_annotations
+from .typing import DataClass, get_annotated, get_annotations, get_subtypes
 
 
 def from_dataclass(
@@ -75,7 +75,7 @@ def from_typehint(
 
     frame = pd.DataFrame(
         data={key: [value] for key, value in specs.items()},
-            index=pd.Index([index], name="index"),
+        index=pd.Index([index], name="index"),
     )
 
     if cast:
@@ -83,7 +83,7 @@ def from_typehint(
     else:
         frames.append(frame)
 
-    for subindex, subtype in enumerate(gen_subtypes(obj)):
+    for subindex, subtype in enumerate(get_subtypes(obj)):
         frames.append(
             from_typehint(
                 subtype,
