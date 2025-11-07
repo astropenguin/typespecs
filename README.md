@@ -11,18 +11,19 @@ from typing import Annotated as Ann
 
 @dataclass
 class Weather:
-    temp: Ann[list[float], Spec(kind="data", name="Temperature", units="K")]
-    wind: Ann[list[float], Spec(kind="data", name="Wind speed", units="m/s")]
-    loc: Ann[str, Spec(kind="meta", name="Observed location")]
+    temp: Ann[list[float], Spec(category="data", name="Temperature", units="K")]
+    wind: Ann[list[float], Spec(category="data", name="Wind speed", units="m/s")]
+    loc: Ann[str, Spec(category="metadata", name="Observed location")]
 
 
 weather = Weather([273.15, 280.15], [5.0, 10.0], "Tokyo")
-print(from_dataclass(weather))
+specs = from_dataclass(weather)
+print(specs)
 ```
 ```
-       kind               name units              data           type
+       category               name units              data           type
 index
-temp   data        Temperature     K  [273.15, 280.15]    list[float]
-wind   data         Wind speed   m/s       [5.0, 10.0]    list[float]
-loc    meta  Observed location  <NA>             Tokyo  <class 'str'>
+temp       data        Temperature     K  [273.15, 280.15]    list[float]
+wind       data         Wind speed   m/s       [5.0, 10.0]    list[float]
+loc    metadata  Observed location  <NA>             Tokyo  <class 'str'>
 ```
