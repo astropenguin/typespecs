@@ -92,6 +92,7 @@ def from_typehint(
                 cast=False,
                 index=f"{index}{separator}{subindex}",
                 merge=False,
+                separator=separator,
             )
         )
 
