@@ -31,7 +31,7 @@ def from_dataclass(
         Created specification DataFrame.
 
     """
-    frames: list[pd.DataFrame] = []
+    frames: list[SpecFrame] = []
 
     for field in fields(obj):
         data = getattr(obj, field.name, field.default)
@@ -78,27 +78,29 @@ def from_typehint(
     for spec in filter(is_spec, annotations):
         specs.update(spec.fillna(annotated))
 
-    frame = pd.DataFrame(
-        data={key: [value] for key, value in specs.items()},
-        index=pd.Index([index], name="index"),
+    frames.append(
+        pd.DataFrame(
+            data={key: [value] for key, value in specs.items()},
+            index=pd.Index([index], name="index"),
+        )
     )
-
-    if cast:
-        frames.append(frame.convert_dtypes())
-    else:
-        frames.append(frame)
 
     for subindex, subtype in enumerate(get_subtypes(obj)):
         frames.append(
             from_typehint(
                 subtype,
-                cast=cast,
+                cast=False,
                 index=f"{index}{sep}{subindex}",
                 merge=False,
             )
         )
 
     if merge:
-        return to_specframe(pd.concat(frames)).bfill().head(1)
+        frame = pd.concat(frames).bfill().head(1)
     else:
-        return to_specframe(pd.concat(frames))
+        frame = pd.concat(frames)
+
+    if cast:
+        return to_specframe(frame.convert_dtypes())
+    else:
+        return to_specframe(frame)
