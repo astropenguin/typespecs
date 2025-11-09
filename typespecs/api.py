@@ -17,7 +17,7 @@ def from_dataclass(
     /,
     cast: bool = True,
     merge: bool = True,
-    sep: str = "/",
+    separator: str = "/",
 ) -> SpecFrame:
     """Create a specification DataFrame from given dataclass instance.
 
@@ -25,7 +25,7 @@ def from_dataclass(
         obj: The dataclass instance to convert.
         cast: Whether to convert column dtypes to nullable ones.
         merge: Whether to merge all subtypes into a single row.
-        sep: Separator for concatenating root and sub-indices.
+        separator: Separator for concatenating root and sub-indices.
 
     Returns:
         Created specification DataFrame.
@@ -41,7 +41,7 @@ def from_dataclass(
                 cast=cast,
                 index=field.name,
                 merge=merge,
-                sep=sep,
+                separator=separator,
             )
         )
 
@@ -55,7 +55,7 @@ def from_typehint(
     cast: bool = True,
     index: str = "root",
     merge: bool = True,
-    sep: str = "/",
+    separator: str = "/",
 ) -> SpecFrame:
     """Create a specification DataFrame from given type hint.
 
@@ -64,7 +64,7 @@ def from_typehint(
         cast: Whether to convert column dtypes to nullable ones.
         index: Root index of the created specification DataFrame.
         merge: Whether to merge all subtypes into a single row.
-        sep: Separator for concatenating root and sub-indices.
+        separator: Separator for concatenating root and sub-indices.
 
     Returns:
         Created specification DataFrame.
@@ -90,7 +90,7 @@ def from_typehint(
             from_typehint(
                 subtype,
                 cast=False,
-                index=f"{index}{sep}{subindex}",
+                index=f"{index}{separator}{subindex}",
                 merge=False,
             )
         )
