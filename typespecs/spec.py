@@ -58,26 +58,29 @@ class SpecFrameAccessor:
     accessed: SpecFrame
     """Specification DataFrame to access."""
 
-    def __getitem__(self, key: str, /) -> pd.Series:
-        """Return specification column by given key.
+    def ensure(self, **defaults: Any) -> SpecFrame:
+        """Ensure given columns exist with their default values.
+
+        This method fills existing columns with their default values
+        where missing, and adds missing columns with their default values.
 
         Args:
-            key: Key of the specification column to get.
+            **defaults: Default values for columns to ensure.
 
         Returns:
-            Specification column with the given key.
-            If the key does not exist, a Series filled with <NA>
-            will be returned instead of a KeyError being raised.
+            Specification DataFrame with ensured columns.
 
         """
-        if key in self.accessed:
-            return self.accessed[key]
-        else:
-            return pd.Series(
-                data=pd.NA,
-                index=self.accessed.index,
-                name=key,
-            )
+        existing: dict[str, Any] = {}
+        missing: dict[str, Any] = {}
+
+        for key, value in defaults.items():
+            if key in self.accessed.columns:
+                existing[key] = value
+            else:
+                missing[key] = value
+
+        return self.accessed.fillna(existing).assign(**missing)  # type: ignore
 
 
 def is_spec(obj: Any, /) -> TypeGuard[Spec]:
