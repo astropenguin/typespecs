@@ -15,7 +15,6 @@ from .typing import DataClass, get_annotated, get_annotations, get_subtypes
 def from_dataclass(
     obj: DataClass,
     /,
-    cast: bool = True,
     merge: bool = True,
     separator: str = "/",
 ) -> SpecFrame:
@@ -23,7 +22,6 @@ def from_dataclass(
 
     Args:
         obj: The dataclass instance to convert.
-        cast: Whether to convert column dtypes to nullable ones.
         merge: Whether to merge all subtypes into a single row.
         separator: Separator for concatenating root and sub-indices.
 
@@ -31,14 +29,13 @@ def from_dataclass(
         Created specification DataFrame.
 
     """
-    frames: list[SpecFrame] = []
+    frames: list[pd.DataFrame] = []
 
     for field in fields(obj):
         data = getattr(obj, field.name, field.default)
         frames.append(
             from_typehint(
                 Annotated[field.type, Spec(data=data)],
-                cast=cast,
                 index=field.name,
                 merge=merge,
                 separator=separator,
@@ -52,7 +49,6 @@ def from_typehint(
     obj: Any,
     /,
     *,
-    cast: bool = True,
     index: str = "root",
     merge: bool = True,
     separator: str = "/",
@@ -61,7 +57,6 @@ def from_typehint(
 
     Args:
         obj: The type hint to convert.
-        cast: Whether to convert column dtypes to nullable ones.
         index: Root index of the created specification DataFrame.
         merge: Whether to merge all subtypes into a single row.
         separator: Separator for concatenating root and sub-indices.
@@ -82,6 +77,7 @@ def from_typehint(
         pd.DataFrame(
             data={key: [value] for key, value in specs.items()},
             index=pd.Index([index], name="index"),
+            dtype=object,
         )
     )
 
@@ -89,7 +85,6 @@ def from_typehint(
         frames.append(
             from_typehint(
                 subtype,
-                cast=False,
                 index=f"{index}{separator}{subindex}",
                 merge=False,
                 separator=separator,
@@ -97,11 +92,6 @@ def from_typehint(
         )
 
     if merge:
-        frame = pd.concat(frames).bfill().head(1)
+        return to_specframe(pd.concat(frames).bfill().head(1))
     else:
-        frame = pd.concat(frames)
-
-    if cast:
-        return to_specframe(frame.convert_dtypes())
-    else:
-        return to_specframe(frame)
+        return to_specframe(pd.concat(frames))
