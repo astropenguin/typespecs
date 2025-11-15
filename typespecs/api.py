@@ -95,7 +95,7 @@ def from_typehint(
 
     with pd.option_context("future.no_silent_downcasting", True):
         if merge:
-            return to_specframe(_concat(frames).bfill().head(1))
+            return to_specframe(_merge(_concat(frames)))
         else:
             return to_specframe(_concat(frames))
 
@@ -115,3 +115,17 @@ def _concat(objs: Iterable[pd.DataFrame], /) -> pd.DataFrame:
     replaced = (df.reindex(columns=columns, fill_value=dummy) for df in objs)
     return pd.concat(replaced).replace({dummy: pd.NA})  # type: ignore
 
+
+def _merge(obj: pd.DataFrame, /) -> pd.DataFrame:
+    """Merge multiple rows of a DataFrame into a single row.
+
+    Args:
+        obj: DataFrame to merge.
+
+    Returns:
+        Merged DataFrame.
+
+    """
+    dummy: Any = object()
+    replaced = obj.replace({float("nan"): dummy})  # type: ignore
+    return replaced.bfill().replace({dummy: float("nan")}).head(1)  # type: ignore
