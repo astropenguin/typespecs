@@ -112,8 +112,8 @@ def _concat(objs: Iterable[pd.DataFrame], /) -> pd.DataFrame:
     """
     dummy: Any = object()
     columns = sorted(set[str]().union(*(df.columns for df in objs)))
-    replaced = (df.reindex(columns=columns, fill_value=dummy) for df in objs)
-    return pd.concat(replaced).replace({dummy: pd.NA})  # type: ignore
+    updated = (df.reindex(columns=columns, fill_value=dummy) for df in objs)  # type: ignore
+    return pd.concat(updated).replace({dummy: pd.NA})  # type: ignore
 
 
 def _merge(obj: pd.DataFrame, /) -> pd.DataFrame:
@@ -127,5 +127,5 @@ def _merge(obj: pd.DataFrame, /) -> pd.DataFrame:
 
     """
     dummy: Any = object()
-    replaced = obj.replace({float("nan"): dummy})  # type: ignore
-    return replaced.bfill().replace({dummy: float("nan")}).head(1)  # type: ignore
+    updated = obj.replace({float("nan"): dummy})  # type: ignore
+    return updated.bfill().replace({dummy: float("nan")}).head(1)  # type: ignore
