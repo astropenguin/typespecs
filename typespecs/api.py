@@ -2,6 +2,7 @@ __all__ = ["from_dataclass", "from_typehint"]
 
 
 # standard library
+from collections.abc import Iterable
 from dataclasses import fields
 from typing import Annotated, Any
 
@@ -42,7 +43,8 @@ def from_dataclass(
             )
         )
 
-    return to_specframe(pd.concat(frames))
+    with pd.option_context("future.no_silent_downcasting", True):
+        return to_specframe(_concat(frames))
 
 
 def from_typehint(
@@ -91,7 +93,25 @@ def from_typehint(
             )
         )
 
-    if merge:
-        return to_specframe(pd.concat(frames).bfill().head(1))
-    else:
-        return to_specframe(pd.concat(frames))
+    with pd.option_context("future.no_silent_downcasting", True):
+        if merge:
+            return to_specframe(_concat(frames).bfill().head(1))
+        else:
+            return to_specframe(_concat(frames))
+
+
+def _concat(objs: Iterable[pd.DataFrame], /) -> pd.DataFrame:
+    """Concatenate multiple DataFrames with missing values filled with <NA>.
+
+    Args:
+        objs: DataFrames to concatenate.
+
+    Returns:
+        Concatenated DataFrame.
+
+    """
+    dummy: Any = object()
+    columns = sorted(set[str]().union(*(df.columns for df in objs)))
+    replaced = (df.reindex(columns=columns, fill_value=dummy) for df in objs)
+    return pd.concat(replaced).replace({dummy: pd.NA})  # type: ignore
+
