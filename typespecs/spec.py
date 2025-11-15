@@ -93,14 +93,14 @@ def is_spec(obj: Any, /) -> TypeGuard[Spec]:
     return isinstance(obj, Spec)
 
 
-def to_specframe(dataframe: pd.DataFrame, /) -> SpecFrame:
+def to_specframe(obj: pd.DataFrame, /) -> SpecFrame:
     """Cast given DataFrame to specification DataFrame.
 
     Args:
-        dataframe: DataFrame to cast.
+        obj: DataFrame to cast.
 
     Returns:
         Cast specification DataFrame.
 
     """
-    return cast(SpecFrame, dataframe)
+    return cast(SpecFrame, obj)
