@@ -2,6 +2,7 @@ __all__ = ["from_dataclass", "from_typehint"]
 
 
 # standard library
+from collections.abc import Iterable
 from dataclasses import fields
 from typing import Annotated, Any
 
@@ -15,7 +16,6 @@ from .typing import DataClass, get_annotated, get_annotations, get_subtypes
 def from_dataclass(
     obj: DataClass,
     /,
-    cast: bool = True,
     merge: bool = True,
     separator: str = "/",
 ) -> SpecFrame:
@@ -23,7 +23,6 @@ def from_dataclass(
 
     Args:
         obj: The dataclass instance to convert.
-        cast: Whether to convert column dtypes to nullable ones.
         merge: Whether to merge all subtypes into a single row.
         separator: Separator for concatenating root and sub-indices.
 
@@ -31,28 +30,27 @@ def from_dataclass(
         Created specification DataFrame.
 
     """
-    frames: list[SpecFrame] = []
+    frames: list[pd.DataFrame] = []
 
     for field in fields(obj):
         data = getattr(obj, field.name, field.default)
         frames.append(
             from_typehint(
                 Annotated[field.type, Spec(data=data)],
-                cast=cast,
                 index=field.name,
                 merge=merge,
                 separator=separator,
             )
         )
 
-    return to_specframe(pd.concat(frames))
+    with pd.option_context("future.no_silent_downcasting", True):
+        return to_specframe(_concat(frames))
 
 
 def from_typehint(
     obj: Any,
     /,
     *,
-    cast: bool = True,
     index: str = "root",
     merge: bool = True,
     separator: str = "/",
@@ -61,7 +59,6 @@ def from_typehint(
 
     Args:
         obj: The type hint to convert.
-        cast: Whether to convert column dtypes to nullable ones.
         index: Root index of the created specification DataFrame.
         merge: Whether to merge all subtypes into a single row.
         separator: Separator for concatenating root and sub-indices.
@@ -82,6 +79,7 @@ def from_typehint(
         pd.DataFrame(
             data={key: [value] for key, value in specs.items()},
             index=pd.Index([index], name="index"),
+            dtype=object,
         )
     )
 
@@ -89,18 +87,45 @@ def from_typehint(
         frames.append(
             from_typehint(
                 subtype,
-                cast=False,
                 index=f"{index}{separator}{subindex}",
                 merge=False,
+                separator=separator,
             )
         )
 
-    if merge:
-        frame = pd.concat(frames).bfill().head(1)
-    else:
-        frame = pd.concat(frames)
+    with pd.option_context("future.no_silent_downcasting", True):
+        if merge:
+            return to_specframe(_merge(_concat(frames)))
+        else:
+            return to_specframe(_concat(frames))
 
-    if cast:
-        return to_specframe(frame.convert_dtypes())
-    else:
-        return to_specframe(frame)
+
+def _concat(objs: Iterable[pd.DataFrame], /) -> pd.DataFrame:
+    """Concatenate multiple DataFrames with missing values filled with <NA>.
+
+    Args:
+        objs: DataFrames to concatenate.
+
+    Returns:
+        Concatenated DataFrame.
+
+    """
+    dummy: Any = object()
+    columns = sorted(set[str]().union(*(df.columns for df in objs)))
+    updated = (df.reindex(columns=columns, fill_value=dummy) for df in objs)  # type: ignore
+    return pd.concat(updated).replace({dummy: pd.NA})  # type: ignore
+
+
+def _merge(obj: pd.DataFrame, /) -> pd.DataFrame:
+    """Merge multiple rows of a DataFrame into a single row.
+
+    Args:
+        obj: DataFrame to merge.
+
+    Returns:
+        Merged DataFrame.
+
+    """
+    dummy: Any = object()
+    updated = obj.replace({float("nan"): dummy})  # type: ignore
+    return updated.bfill().replace({dummy: float("nan")}).head(1)  # type: ignore
