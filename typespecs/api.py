@@ -125,6 +125,19 @@ def _concat(objs: Iterable[pd.DataFrame], /) -> pd.DataFrame:
     return frame
 
 
+def _isna(obj: Any, /) -> bool:
+    """Check if given object is identical to <NA>.
+
+    Args:
+        obj: Object to inspect.
+
+    Returns:
+        True if the object is <NA>. False otherwise.
+
+    """
+    return obj is pd.NA
+
+
 def _merge(obj: pd.DataFrame, /) -> pd.DataFrame:
     """Merge multiple rows of a DataFrame into a single row.
 
@@ -135,6 +148,4 @@ def _merge(obj: pd.DataFrame, /) -> pd.DataFrame:
         Merged DataFrame.
 
     """
-    dummy: Any = object()
-    updated = obj.replace({float("nan"): dummy})  # type: ignore
-    return updated.bfill().replace({dummy: float("nan")}).head(1)  # type: ignore
+    return obj.mask(obj.map(_isna), obj.bfill()).head(1)
