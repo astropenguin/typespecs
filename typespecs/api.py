@@ -1,9 +1,9 @@
-__all__ = ["from_dataclass", "from_typehint"]
+__all__ = ["ITSELF", "ItselfType", "from_dataclass", "from_typehint"]
 
 
 # standard library
 from collections.abc import Iterable
-from dataclasses import fields
+from dataclasses import dataclass, fields
 from typing import Annotated, Any
 
 
@@ -11,6 +11,18 @@ from typing import Annotated, Any
 import pandas as pd
 from .spec import Spec, SpecFrame, is_spec, to_specframe
 from .typing import DataClass, get_annotated, get_annotations, get_subtypes
+
+
+@dataclass(frozen=True)
+class ItselfType:
+    """Sentinel object representing annotated type itself."""
+
+    def __repr__(self) -> str:
+        return "<ITSELF>"
+
+
+ITSELF = ItselfType()
+"""Sentinel object representing annotated type itself."""
 
 
 def from_dataclass(
@@ -68,12 +80,12 @@ def from_typehint(
 
     """
     annotated = get_annotated(obj, recursive=True)
-    annotations = get_annotations(Annotated[obj, Spec(type=pd.NA)])
+    annotations = get_annotations(Annotated[obj, Spec(type=ITSELF)])
     frames: list[pd.DataFrame] = []
     specs: dict[str, Any] = {}
 
     for spec in filter(is_spec, annotations):
-        specs.update(spec.fillna(annotated))
+        specs.update(spec.replace(ITSELF, annotated))
 
     frames.append(
         pd.DataFrame(
