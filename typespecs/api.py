@@ -78,7 +78,7 @@ def from_typehint(
     frames.append(
         pd.DataFrame(
             data={key: [value] for key, value in specs.items()},
-            index=pd.Index([index], name="index"),
+            index=[index],
             dtype=object,
         )
     )
@@ -110,10 +110,32 @@ def _concat(objs: Iterable[pd.DataFrame], /) -> pd.DataFrame:
         Concatenated DataFrame.
 
     """
-    dummy: Any = object()
-    columns = sorted(set[str]().union(*(df.columns for df in objs)))
-    updated = (df.reindex(columns=columns, fill_value=dummy) for df in objs)  # type: ignore
-    return pd.concat(updated).replace({dummy: pd.NA})  # type: ignore
+    indexes = [obj.index for obj in objs]
+    columns = [obj.columns for obj in objs]
+    frame = pd.DataFrame(
+        data=pd.NA,
+        index=pd.Index([]).append(indexes),
+        columns=pd.Index([]).append(columns).unique().sort_values(),
+        dtype=object,
+    )
+
+    for obj in objs:
+        frame.loc[obj.index, obj.columns] = obj
+
+    return frame
+
+
+def _isna(obj: Any, /) -> bool:
+    """Check if given object is identical to <NA>.
+
+    Args:
+        obj: Object to inspect.
+
+    Returns:
+        True if the object is <NA>. False otherwise.
+
+    """
+    return obj is pd.NA
 
 
 def _merge(obj: pd.DataFrame, /) -> pd.DataFrame:
@@ -126,6 +148,4 @@ def _merge(obj: pd.DataFrame, /) -> pd.DataFrame:
         Merged DataFrame.
 
     """
-    dummy: Any = object()
-    updated = obj.replace({float("nan"): dummy})  # type: ignore
-    return updated.bfill().replace({dummy: float("nan")}).head(1)  # type: ignore
+    return obj.mask(obj.map(_isna), obj.bfill()).head(1)

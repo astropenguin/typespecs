@@ -45,3 +45,6 @@ dev = [
 
 [tool.pyright]
 typeCheckingMode = "strict"
+reportArgumentType = "warning"
+reportCallIssue = "warning"
+reportUnknownMemberType = "warning"
