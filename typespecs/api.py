@@ -28,15 +28,19 @@ ITSELF = ItselfType()
 def from_dataclass(
     obj: DataClass,
     /,
+    data: str = "data",
     merge: bool = True,
     separator: str = "/",
+    type: str = "type",
 ) -> SpecFrame:
     """Create a specification DataFrame from given dataclass instance.
 
     Args:
         obj: The dataclass instance to convert.
+        data: Column name of field data in the specification DataFrame.
         merge: Whether to merge all subtypes into a single row.
         separator: Separator for concatenating root and sub-indices.
+        type: Column name of field types in the specification DataFrame.
 
     Returns:
         Created specification DataFrame.
@@ -45,13 +49,14 @@ def from_dataclass(
     frames: list[pd.DataFrame] = []
 
     for field in fields(obj):
-        data = getattr(obj, field.name, field.default)
+        data_ = getattr(obj, field.name, field.default)
         frames.append(
             from_typehint(
-                Annotated[field.type, Spec(data=data)],
+                Annotated[field.type, Spec({data: data_})],
                 index=field.name,
                 merge=merge,
                 separator=separator,
+                type=type,
             )
         )
 
@@ -66,6 +71,7 @@ def from_typehint(
     index: str = "root",
     merge: bool = True,
     separator: str = "/",
+    type: str = "type",
 ) -> SpecFrame:
     """Create a specification DataFrame from given type hint.
 
@@ -74,13 +80,14 @@ def from_typehint(
         index: Root index of the created specification DataFrame.
         merge: Whether to merge all subtypes into a single row.
         separator: Separator for concatenating root and sub-indices.
+        type: Column name of the type hint in the specification DataFrame.
 
     Returns:
         Created specification DataFrame.
 
     """
     annotated = get_annotated(obj, recursive=True)
-    annotations = get_annotations(Annotated[obj, Spec(type=ITSELF)])
+    annotations = get_annotations(Annotated[obj, Spec({type: ITSELF})])
     frames: list[pd.DataFrame] = []
     specs: dict[str, Any] = {}
 
@@ -102,6 +109,7 @@ def from_typehint(
                 index=f"{index}{separator}{subindex}",
                 merge=False,
                 separator=separator,
+                type=type,
             )
         )
 
