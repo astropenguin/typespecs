@@ -20,11 +20,20 @@ class Spec(dict[str, Any]):
 
     """
 
-    def fillna(self, value: Any, /) -> Self:
-        """Fill missing values with given value."""
+    def replace(self, old_value: Any, new_value: Any, /) -> Self:
+        """Replace occurrences of old value with new value.
+
+        Args:
+            old_value: The value to be replaced.
+            new_value: The value to replace with.
+
+        Returns:
+            Replaced type specification.
+
+        """
         return type(self)(
-            (key, value if current is pd.NA else current)
-            for key, current in self.items()
+            (key, new_value if value == old_value else value)
+            for key, value in self.items()
         )
 
 
