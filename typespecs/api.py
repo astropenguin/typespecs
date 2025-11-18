@@ -10,19 +10,19 @@ from typing import Annotated, Any
 # dependencies
 import pandas as pd
 from .spec import Spec, SpecFrame, is_spec, to_specframe
-from .typing import DataClass, get_annotated, get_annotations, get_subtypes
+from .typing import DataClass, get_annotation, get_metadata, get_subtypes
 
 
 @dataclass(frozen=True)
 class ItselfType:
-    """Sentinel object representing annotated type itself."""
+    """Sentinel object representing metadata-attached annotation itself."""
 
     def __repr__(self) -> str:
         return "<ITSELF>"
 
 
 ITSELF = ItselfType()
-"""Sentinel object representing annotated type itself."""
+"""Sentinel object representing metadata-attached annotation itself."""
 
 
 def from_dataclass(
@@ -86,13 +86,13 @@ def from_typehint(
         Created specification DataFrame.
 
     """
-    annotated = get_annotated(obj, recursive=True)
-    annotations = get_annotations(Annotated[obj, Spec({type: ITSELF})])
+    annotation = get_annotation(obj, recursive=True)
+    metadata = get_metadata(Annotated[obj, Spec({type: ITSELF})])
     frames: list[pd.DataFrame] = []
     specs: dict[str, Any] = {}
 
-    for spec in filter(is_spec, annotations):
-        specs.update(spec.replace(ITSELF, annotated))
+    for spec in filter(is_spec, metadata):
+        specs.update(spec.replace(ITSELF, annotation))
 
     frames.append(
         pd.DataFrame(

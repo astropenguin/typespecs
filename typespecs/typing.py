@@ -1,9 +1,9 @@
 __all__ = [
     "DataClass",
-    "get_annotated",
-    "get_annotations",
+    "get_annotation",
+    "get_metadata",
     "get_subtypes",
-    "is_annotated",
+    "has_metadata",
     "is_literal",
 ]
 
@@ -29,34 +29,34 @@ DataClass = DataClassInstance | type[DataClassInstance]
 """Type hint for any data class or data-class instance."""
 
 
-def get_annotated(obj: Any, /, *, recursive: bool = False) -> Any:
-    """Return the bare type if given object is an annotated type.
+def get_annotation(obj: Any, /, *, recursive: bool = False) -> Any:
+    """Return metadata-stripped annotation of given object.
 
     Args:
         obj: Object to inspect.
-        recursive: Whether to recursively strip all annotations.
+        recursive: Whether to recursively strip all metadata.
 
     Returns:
-        Bare type of the object.
+        Metadata-stripped annotation of the object.
 
     """
     if recursive:
         return _strip_annotations(obj)  # type: ignore
     else:
-        return get_args(obj)[0] if is_annotated(obj) else obj
+        return get_args(obj)[0] if has_metadata(obj) else obj
 
 
-def get_annotations(obj: Any, /) -> list[Any]:
-    """Return all type annotations of given object.
+def get_metadata(obj: Any, /) -> list[Any]:
+    """Return all metadata of given object.
 
     Args:
         obj: Object to inspect.
 
     Returns:
-        List of all type annotations of the object.
+        List of all metadata of the object.
 
     """
-    return [*get_args(obj)[1:]] if is_annotated(obj) else []
+    return [*get_args(obj)[1:]] if has_metadata(obj) else []
 
 
 def get_subtypes(obj: Any, /) -> list[Any]:
@@ -69,20 +69,20 @@ def get_subtypes(obj: Any, /) -> list[Any]:
         List of all subtypes of the object.
 
     """
-    if is_literal(annotated := get_annotated(obj)):
+    if is_literal(annotation := get_annotation(obj)):
         return []
     else:
-        return list(get_args(annotated))
+        return list(get_args(annotation))
 
 
-def is_annotated(obj: Any, /) -> bool:
-    """Check if given object is an annotated type.
+def has_metadata(obj: Any, /) -> bool:
+    """Check if given object has metadata.
 
     Args:
         obj: Object to inspect.
 
     Returns:
-        True if the object is an annotated type. False otherwise.
+        True if the object has metadata. False otherwise.
 
     """
     return get_origin(obj) is Annotated
