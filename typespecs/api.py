@@ -16,14 +16,14 @@ from .typing import HasAnnotations, get_annotation, get_metadata, get_subtypes
 
 @dataclass(frozen=True)
 class ItselfType:
-    """Sentinel object representing metadata-attached annotation itself."""
+    """Sentinel object specifying metadata-stripped annotation itself."""
 
     def __repr__(self) -> str:
         return "<ITSELF>"
 
 
 ITSELF = ItselfType()
-"""Sentinel object representing metadata-attached annotation itself."""
+"""Sentinel object specifying metadata-stripped annotation itself."""
 
 
 def from_annotated(
