@@ -1,4 +1,4 @@
-__all__ = ["ITSELF", "ItselfType", "from_annotated", "from_typehint"]
+__all__ = ["ITSELF", "ItselfType", "from_annotated", "from_annotation"]
 
 
 # standard library
@@ -52,7 +52,7 @@ def from_annotated(
     for index, annotation in get_annotations(obj).items():
         data_ = getattr(obj, index, pd.NA)
         frames.append(
-            from_typehint(
+            from_annotation(
                 Annotated[annotation, Spec({data: data_})],
                 index=index,
                 merge=merge,
@@ -65,7 +65,7 @@ def from_annotated(
         return to_specframe(_concat(frames))
 
 
-def from_typehint(
+def from_annotation(
     obj: Any,
     /,
     *,
@@ -74,10 +74,10 @@ def from_typehint(
     separator: str = "/",
     type: str = "type",
 ) -> SpecFrame:
-    """Create a specification DataFrame from given type hint.
+    """Create a specification DataFrame from given annotation.
 
     Args:
-        obj: The type hint to convert.
+        obj: The annotation to convert.
         index: Root index of the created specification DataFrame.
         merge: Whether to merge all subtypes into a single row.
         separator: Separator for concatenating root and sub-indices.
@@ -105,7 +105,7 @@ def from_typehint(
 
     for subindex, subtype in enumerate(get_subtypes(obj)):
         frames.append(
-            from_typehint(
+            from_annotation(
                 subtype,
                 index=f"{index}{separator}{subindex}",
                 merge=False,
