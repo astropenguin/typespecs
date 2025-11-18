@@ -1,5 +1,5 @@
 __all__ = [
-    "DataClass",
+    "HasAnnotations",
     "get_annotation",
     "get_metadata",
     "get_subtypes",
@@ -9,8 +9,7 @@ __all__ = [
 
 
 # standard library
-from dataclasses import Field
-from typing import Annotated, Any, ClassVar, Literal, Protocol
+from typing import Annotated, Any, Literal, Protocol
 from typing import _strip_annotations  # type: ignore
 
 
@@ -19,14 +18,10 @@ from typing_extensions import get_args, get_origin
 
 
 # type hints
-class DataClassInstance(Protocol):
-    """Type hint for any data-class instance."""
+class HasAnnotations(Protocol):
+    """Type hint for any object with annotations."""
 
-    __dataclass_fields__: ClassVar[dict[str, Field[Any]]]
-
-
-DataClass = DataClassInstance | type[DataClassInstance]
-"""Type hint for any data class or data-class instance."""
+    __annotations__: dict[str, Any]
 
 
 def get_annotation(obj: Any, /, *, recursive: bool = False) -> Any:

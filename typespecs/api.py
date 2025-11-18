@@ -1,16 +1,17 @@
-__all__ = ["ITSELF", "ItselfType", "from_dataclass", "from_typehint"]
+__all__ = ["ITSELF", "ItselfType", "from_annotated", "from_typehint"]
 
 
 # standard library
 from collections.abc import Iterable
-from dataclasses import dataclass, fields
+from dataclasses import dataclass
 from typing import Annotated, Any
 
 
 # dependencies
 import pandas as pd
+from typing_extensions import get_annotations
 from .spec import Spec, SpecFrame, is_spec, to_specframe
-from .typing import DataClass, get_annotation, get_metadata, get_subtypes
+from .typing import HasAnnotations, get_annotation, get_metadata, get_subtypes
 
 
 @dataclass(frozen=True)
@@ -25,18 +26,18 @@ ITSELF = ItselfType()
 """Sentinel object representing metadata-attached annotation itself."""
 
 
-def from_dataclass(
-    obj: DataClass,
+def from_annotated(
+    obj: HasAnnotations,
     /,
     data: str = "data",
     merge: bool = True,
     separator: str = "/",
     type: str = "type",
 ) -> SpecFrame:
-    """Create a specification DataFrame from given dataclass instance.
+    """Create a specification DataFrame from given object with annotations.
 
     Args:
-        obj: The dataclass instance to convert.
+        obj: The object to convert.
         data: Column name of field data in the specification DataFrame.
         merge: Whether to merge all subtypes into a single row.
         separator: Separator for concatenating root and sub-indices.
@@ -48,12 +49,12 @@ def from_dataclass(
     """
     frames: list[pd.DataFrame] = []
 
-    for field in fields(obj):
-        data_ = getattr(obj, field.name, field.default)
+    for index, annotation in get_annotations(obj).items():
+        data_ = getattr(obj, index, pd.NA)
         frames.append(
             from_typehint(
-                Annotated[field.type, Spec({data: data_})],
-                index=field.name,
+                Annotated[annotation, Spec({data: data_})],
+                index=index,
                 merge=merge,
                 separator=separator,
                 type=type,
