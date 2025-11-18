@@ -1,46 +1,47 @@
-__all__ = ["ITSELF", "ItselfType", "from_dataclass", "from_typehint"]
+__all__ = ["ITSELF", "ItselfType", "from_annotated", "from_annotation"]
 
 
 # standard library
 from collections.abc import Iterable
-from dataclasses import dataclass, fields
+from dataclasses import dataclass
 from typing import Annotated, Any
 
 
 # dependencies
 import pandas as pd
+from typing_extensions import get_annotations
 from .spec import Spec, SpecFrame, is_spec, to_specframe
-from .typing import DataClass, get_annotated, get_annotations, get_subtypes
+from .typing import HasAnnotations, get_annotation, get_metadata, get_subannotations
 
 
 @dataclass(frozen=True)
 class ItselfType:
-    """Sentinel object representing annotated type itself."""
+    """Sentinel object specifying metadata-stripped annotation itself."""
 
     def __repr__(self) -> str:
         return "<ITSELF>"
 
 
 ITSELF = ItselfType()
-"""Sentinel object representing annotated type itself."""
+"""Sentinel object specifying metadata-stripped annotation itself."""
 
 
-def from_dataclass(
-    obj: DataClass,
+def from_annotated(
+    obj: HasAnnotations,
     /,
-    data: str = "data",
+    data: str | None = "data",
     merge: bool = True,
     separator: str = "/",
-    type: str = "type",
+    type: str | None = "type",
 ) -> SpecFrame:
-    """Create a specification DataFrame from given dataclass instance.
+    """Create a specification DataFrame from given object with annotations.
 
     Args:
-        obj: The dataclass instance to convert.
-        data: Column name of field data in the specification DataFrame.
+        obj: The object to convert.
+        data: Name of the column for the actual data of the annotations.
         merge: Whether to merge all subtypes into a single row.
         separator: Separator for concatenating root and sub-indices.
-        type: Column name of field types in the specification DataFrame.
+        type: Name of the column for the metadata-stripped annotations.
 
     Returns:
         Created specification DataFrame.
@@ -48,12 +49,15 @@ def from_dataclass(
     """
     frames: list[pd.DataFrame] = []
 
-    for field in fields(obj):
-        data_ = getattr(obj, field.name, field.default)
+    for index, annotation in get_annotations(obj).items():
+        if data is not None:
+            data_ = getattr(obj, index, pd.NA)
+            annotation = Annotated[annotation, Spec({data: data_})]
+
         frames.append(
-            from_typehint(
-                Annotated[field.type, Spec({data: data_})],
-                index=field.name,
+            from_annotation(
+                annotation,
+                index=index,
                 merge=merge,
                 separator=separator,
                 type=type,
@@ -64,48 +68,49 @@ def from_dataclass(
         return to_specframe(_concat(frames))
 
 
-def from_typehint(
+def from_annotation(
     obj: Any,
     /,
     *,
     index: str = "root",
     merge: bool = True,
     separator: str = "/",
-    type: str = "type",
+    type: str | None = "type",
 ) -> SpecFrame:
-    """Create a specification DataFrame from given type hint.
+    """Create a specification DataFrame from given annotation.
 
     Args:
-        obj: The type hint to convert.
+        obj: The annotation to convert.
         index: Root index of the created specification DataFrame.
         merge: Whether to merge all subtypes into a single row.
         separator: Separator for concatenating root and sub-indices.
-        type: Column name of the type hint in the specification DataFrame.
+        type: Name of the column for the metadata-stripped annotations.
 
     Returns:
         Created specification DataFrame.
 
     """
-    annotated = get_annotated(obj, recursive=True)
-    annotations = get_annotations(Annotated[obj, Spec({type: ITSELF})])
-    frames: list[pd.DataFrame] = []
+    if type is not None:
+        obj = Annotated[obj, Spec({type: ITSELF})]
+
+    type_ = get_annotation(obj, recursive=True)
     specs: dict[str, Any] = {}
 
-    for spec in filter(is_spec, annotations):
-        specs.update(spec.replace(ITSELF, annotated))
+    for spec in filter(is_spec, get_metadata(obj)):
+        specs.update(spec.replace(ITSELF, type_))
 
-    frames.append(
+    frames = [
         pd.DataFrame(
             data={key: [value] for key, value in specs.items()},
             index=[index],
             dtype=object,
         )
-    )
+    ]
 
-    for subindex, subtype in enumerate(get_subtypes(obj)):
+    for subindex, subannotation in enumerate(get_subannotations(obj)):
         frames.append(
-            from_typehint(
-                subtype,
+            from_annotation(
+                subannotation,
                 index=f"{index}{separator}{subindex}",
                 merge=False,
                 separator=separator,

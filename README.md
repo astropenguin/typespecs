@@ -11,7 +11,7 @@ Data specifications by type hints
 
 ```python
 from dataclasses import dataclass
-from typespecs import Spec, from_dataclass
+from typespecs import Spec, from_annotated
 from typing import Annotated as Ann
 
 
@@ -23,7 +23,7 @@ class Weather:
 
 
 weather = Weather([273.15, 280.15], [5.0, 10.0], "Tokyo")
-specs = from_dataclass(weather)
+specs = from_annotated(weather)
 print(specs)
 ```
 ```
