@@ -11,7 +11,7 @@ from typing import Annotated, Any
 import pandas as pd
 from typing_extensions import get_annotations
 from .spec import Spec, SpecFrame, is_spec, to_specframe
-from .typing import HasAnnotations, get_annotation, get_metadata, get_subtypes
+from .typing import HasAnnotations, get_annotation, get_metadata, get_subannotations
 
 
 @dataclass(frozen=True)
@@ -107,10 +107,10 @@ def from_annotation(
         )
     ]
 
-    for subindex, subtype in enumerate(get_subtypes(obj)):
+    for subindex, subannotation in enumerate(get_subannotations(obj)):
         frames.append(
             from_annotation(
-                subtype,
+                subannotation,
                 index=f"{index}{separator}{subindex}",
                 merge=False,
                 separator=separator,

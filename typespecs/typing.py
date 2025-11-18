@@ -2,7 +2,7 @@ __all__ = [
     "HasAnnotations",
     "get_annotation",
     "get_metadata",
-    "get_subtypes",
+    "get_subannotations",
     "has_metadata",
     "is_literal",
 ]
@@ -54,14 +54,14 @@ def get_metadata(obj: Any, /) -> list[Any]:
     return [*get_args(obj)[1:]] if has_metadata(obj) else []
 
 
-def get_subtypes(obj: Any, /) -> list[Any]:
-    """Return all subtypes of given object.
+def get_subannotations(obj: Any, /) -> list[Any]:
+    """Return all sub-annotations of given object.
 
     Args:
         obj: Object to inspect.
 
     Returns:
-        List of all subtypes of the object.
+        List of all sub-annotations of the object.
 
     """
     if is_literal(annotation := get_annotation(obj)):
