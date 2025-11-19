@@ -1,29 +1,16 @@
-__all__ = ["ITSELF", "ItselfType", "from_annotated", "from_annotation"]
+__all__ = ["from_annotated", "from_annotation"]
 
 
 # standard library
 from collections.abc import Iterable
-from dataclasses import dataclass
 from typing import Annotated, Any
 
 
 # dependencies
 import pandas as pd
 from typing_extensions import get_annotations
-from .spec import Spec, SpecFrame, is_spec, to_specframe
+from .spec import ITSELF, Spec, is_spec
 from .typing import HasAnnotations, get_annotation, get_metadata, get_subannotations
-
-
-@dataclass(frozen=True)
-class ItselfType:
-    """Sentinel object specifying metadata-stripped annotation itself."""
-
-    def __repr__(self) -> str:
-        return "<ITSELF>"
-
-
-ITSELF = ItselfType()
-"""Sentinel object specifying metadata-stripped annotation itself."""
 
 
 def from_annotated(
@@ -33,7 +20,7 @@ def from_annotated(
     merge: bool = True,
     separator: str = "/",
     type: str | None = "type",
-) -> SpecFrame:
+) -> pd.DataFrame:
     """Create a specification DataFrame from given object with annotations.
 
     Args:
@@ -65,7 +52,7 @@ def from_annotated(
         )
 
     with pd.option_context("future.no_silent_downcasting", True):
-        return to_specframe(_concat(frames))
+        return _concat(frames)
 
 
 def from_annotation(
@@ -76,7 +63,7 @@ def from_annotation(
     merge: bool = True,
     separator: str = "/",
     type: str | None = "type",
-) -> SpecFrame:
+) -> pd.DataFrame:
     """Create a specification DataFrame from given annotation.
 
     Args:
@@ -120,9 +107,9 @@ def from_annotation(
 
     with pd.option_context("future.no_silent_downcasting", True):
         if merge:
-            return to_specframe(_merge(_concat(frames)))
+            return _merge(_concat(frames))
         else:
-            return to_specframe(_concat(frames))
+            return _concat(frames)
 
 
 def _concat(objs: Iterable[pd.DataFrame], /) -> pd.DataFrame:
