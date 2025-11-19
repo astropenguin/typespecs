@@ -1,29 +1,16 @@
-__all__ = ["ITSELF", "ItselfType", "from_annotated", "from_annotation"]
+__all__ = ["from_annotated", "from_annotation"]
 
 
 # standard library
 from collections.abc import Iterable
-from dataclasses import dataclass
 from typing import Annotated, Any
 
 
 # dependencies
 import pandas as pd
 from typing_extensions import get_annotations
-from .spec import Spec, is_spec
+from .spec import ITSELF, Spec, is_spec
 from .typing import HasAnnotations, get_annotation, get_metadata, get_subannotations
-
-
-@dataclass(frozen=True)
-class ItselfType:
-    """Sentinel object specifying metadata-stripped annotation itself."""
-
-    def __repr__(self) -> str:
-        return "<ITSELF>"
-
-
-ITSELF = ItselfType()
-"""Sentinel object specifying metadata-stripped annotation itself."""
 
 
 def from_annotated(

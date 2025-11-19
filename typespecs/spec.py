@@ -1,12 +1,25 @@
-__all__ = ["Spec", "is_spec"]
+__all__ = ["ITSELF", "ItselfType", "Spec", "is_spec"]
 
 
 # standard library
+from dataclasses import dataclass
 from typing import Any
 
 
 # dependencies
 from typing_extensions import Self, TypeGuard
+
+
+@dataclass(frozen=True)
+class ItselfType:
+    """Sentinel object specifying metadata-stripped annotation itself."""
+
+    def __repr__(self) -> str:
+        return "<ITSELF>"
+
+
+ITSELF = ItselfType()
+"""Sentinel object specifying metadata-stripped annotation itself."""
 
 
 class Spec(dict[str, Any]):
