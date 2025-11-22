@@ -51,7 +51,7 @@ def get_metadata(obj: Any, /) -> list[Any]:
         List of all metadata of the object.
 
     """
-    return [*get_args(obj)[1:]] if has_metadata(obj) else []
+    return list(get_args(obj)[1:]) if has_metadata(obj) else []
 
 
 def get_subannotations(obj: Any, /) -> list[Any]:

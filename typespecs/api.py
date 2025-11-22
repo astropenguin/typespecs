@@ -113,7 +113,7 @@ def from_annotation(
 
 
 def _concat(objs: Iterable[pd.DataFrame], /) -> pd.DataFrame:
-    """Concatenate multiple DataFrames with missing values filled with <NA>.
+    """Concatenate DataFrames with missing values filled with <NA>.
 
     Args:
         objs: DataFrames to concatenate.
@@ -160,4 +160,11 @@ def _merge(obj: pd.DataFrame, /) -> pd.DataFrame:
         Merged DataFrame.
 
     """
-    return obj.mask(obj.map(_isna), obj.bfill()).head(1)
+    try:
+        # for pandas >= 2.1
+        isna = obj.map(_isna)
+    except AttributeError:
+        # for pandas < 2.1
+        isna = obj.applymap(_isna)  # type: ignore
+
+    return obj.mask(isna, obj.bfill()).head(1)  # type: ignore
