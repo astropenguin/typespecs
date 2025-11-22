@@ -6,8 +6,9 @@ readme = "README.md"
 keywords = [
     "annotation",
     "dataclass",
+    "dataframe",
     "namedtuple",
-    "pandas",
+    "python",
     "specification",
     "typeddict",
     "typing",
