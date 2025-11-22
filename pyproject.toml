@@ -1,9 +1,18 @@
 [project]
 name = "typespecs"
-version = "0.6.0"
+version = "1.0.0rc1"
 description = "Data specifications by type hints"
 readme = "README.md"
-keywords = ["dataclasses", "specifications", "typing"]
+keywords = [
+    "annotation",
+    "dataclass",
+    "dataframe",
+    "namedtuple",
+    "python",
+    "specification",
+    "typeddict",
+    "typing",
+]
 requires-python = ">=3.10,<3.15"
 dependencies = [
     "pandas>=2,<3",
@@ -27,7 +36,7 @@ email = "taniguchi.akio@gmail.com"
 file = "LICENSE"
 
 [project.urls]
-homepage = "https://astropenguin.github.io/typespecs/v0.6.0"
+homepage = "https://astropenguin.github.io/typespecs"
 repository = "https://github.com/astropenguin/typespecs"
 
 [build-system]
@@ -40,7 +49,10 @@ dev = [
     "ipython>=8,<10",
     "myst-parser>=3,<5",
     "pandas-stubs>=2,<3",
+    "pydata-sphinx-theme>=0.16,<1.0",
     "pyright>=1,<2",
+    "pytest>=9,<10",
+    "sphinx>=8,<9",
 ]
 
 [tool.pyright]
