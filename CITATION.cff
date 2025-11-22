@@ -10,7 +10,7 @@ type: software
 authors:
   - given-names: Akio
     family-names: Taniguchi
-    email: taniguchi.akio@gmail.com
+    email: a-taniguchi@mail.kitami-it.ac.jp
     affiliation: Kitami Institute of Technology
     orcid: 'https://orcid.org/0000-0002-9695-6183'
 repository-code: 'https://github.com/astropenguin/typespecs'
@@ -26,5 +26,5 @@ keywords:
   - typeddict
   - typing
 license: MIT
-version: 1.0.0rc1
+version: 1.0.0rc2
 date-released: '2025-11-22'
