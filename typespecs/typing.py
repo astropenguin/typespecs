@@ -1,6 +1,7 @@
 __all__ = [
     "HasAnnotations",
     "get_annotation",
+    "get_annotations",
     "get_metadata",
     "get_subannotations",
     "has_metadata",
@@ -15,6 +16,7 @@ from typing import _strip_annotations  # type: ignore
 
 # dependencies
 from typing_extensions import get_args, get_origin
+from typing_extensions import get_annotations as _get_annotations
 
 
 # type hints
@@ -39,6 +41,27 @@ def get_annotation(obj: Any, /, *, recursive: bool = False) -> Any:
         return _strip_annotations(obj)  # type: ignore
     else:
         return get_args(obj)[0] if has_metadata(obj) else obj
+
+
+def get_annotations(obj: Any, /) -> dict[str, Any]:
+    """Return all annotations of given object.
+
+    Prior to Python 3.14, this is identical to
+    ``typing_extensions.get_annotations``.
+    For Python 3.14 and later, it falls back to
+    the object's class if ``__annotations__`` is missing.
+
+    Args:
+        obj: Object to inspect.
+
+    Returns:
+        Dictionary of all annotations of the object.
+
+    """
+    if hasattr(obj, "__annotations__"):
+        return _get_annotations(obj)
+    else:
+        return _get_annotations(type(obj))
 
 
 def get_metadata(obj: Any, /) -> list[Any]:

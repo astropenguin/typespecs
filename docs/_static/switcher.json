@@ -1,7 +1,12 @@
 [
     {
-        "name": "1.0.0rc1 (latest)",
+        "name": "1.0.0rc2 (latest)",
+        "version": "1.0.0rc2",
+        "url": "https://astropenguin.github.io/typespecs/"
+    },
+    {
+        "name": "1.0.0rc1",
         "version": "1.0.0rc1",
-        "url": "https://astropenguin.github.io/typespecs"
+        "url": "https://astropenguin.github.io/typespecs/1.0.0rc1/"
     }
 ]
