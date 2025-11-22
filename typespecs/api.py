@@ -8,9 +8,14 @@ from typing import Annotated, Any
 
 # dependencies
 import pandas as pd
-from typing_extensions import get_annotations
 from .spec import ITSELF, Spec, is_spec
-from .typing import HasAnnotations, get_annotation, get_metadata, get_subannotations
+from .typing import (
+    HasAnnotations,
+    get_annotation,
+    get_annotations,
+    get_metadata,
+    get_subannotations,
+)
 
 
 def from_annotated(

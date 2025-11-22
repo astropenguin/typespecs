@@ -1,10 +1,11 @@
 # standard library
-from typing import Annotated as Ann, Literal as L
+from typing import Annotated as Ann, Literal as L, TypedDict
 
 
 # dependencies
 from typespecs.typing import (
     get_annotation,
+    get_annotations,
     get_metadata,
     get_subannotations,
     has_metadata,
@@ -18,6 +19,12 @@ def test_get_annotation() -> None:
     assert get_annotation(Ann[int, 0], recursive=True) == int
     assert get_annotation(list[Ann[int, 0]]) == list[Ann[int, 0]]
     assert get_annotation(list[Ann[int, 0]], recursive=True) == list[int]
+
+
+def test_get_annotations() -> None:
+    assert get_annotations(int) == {}
+    assert get_annotations(type("Test", (), {})()) == {}
+    assert get_annotations(TypedDict("Test", {"_": int})) == {"_": int}
 
 
 def test_get_metadata() -> None:
