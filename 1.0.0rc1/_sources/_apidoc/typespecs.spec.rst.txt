@@ -1,0 +1,7 @@
+typespecs.spec module
+=====================
+
+.. automodule:: typespecs.spec
+   :members:
+   :show-inheritance:
+   :undoc-members:
