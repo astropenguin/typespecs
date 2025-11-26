@@ -85,8 +85,8 @@ def from_annotation(
     if type is not None:
         obj = Annotated[obj, Spec({type: ITSELF})]
 
-    type_ = get_annotation(obj, recursive=True)
     specs: dict[str, Any] = {}
+    type_ = get_annotation(obj, recursive=True)
 
     for spec in filter(is_spec, get_metadata(obj)):
         specs.update(spec.replace(ITSELF, type_))
@@ -111,10 +111,7 @@ def from_annotation(
         )
 
     with pd.option_context("future.no_silent_downcasting", True):
-        if merge:
-            return _merge(_concat(frames))
-        else:
-            return _concat(frames)
+        return _merge(_concat(frames)) if merge else _concat(frames)
 
 
 def _concat(objs: Iterable[pd.DataFrame], /) -> pd.DataFrame:
