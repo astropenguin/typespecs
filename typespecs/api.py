@@ -1,4 +1,4 @@
-__all__ = ["from_annotated", "from_annotation"]
+__all__ = ["from_annotated", "from_annotation", "from_annotations"]
 
 
 # standard library
@@ -31,7 +31,7 @@ def from_annotated(
     Args:
         obj: The object to convert.
         data: Name of the column for the actual data of the annotations.
-        merge: Whether to merge all subtypes into a single row.
+        merge: Whether to merge all sub-annotations into a single row.
         separator: Separator for concatenating root and sub-indices.
         type: Name of the column for the metadata-stripped annotations.
 
@@ -39,25 +39,21 @@ def from_annotated(
         Created specification DataFrame.
 
     """
-    frames: list[pd.DataFrame] = []
+    if data is None:
+        annotations = get_annotations(obj)
+    else:
+        annotations: dict[str, Any] = {}
 
-    for index, annotation in get_annotations(obj).items():
-        if data is not None:
-            data_ = getattr(obj, index, pd.NA)
-            annotation = Annotated[annotation, Spec({data: data_})]
+        for index, annotation in get_annotations(obj).items():
+            spec = Spec({data: getattr(obj, index, pd.NA)})
+            annotations[index] = Annotated[annotation, spec]
 
-        frames.append(
-            from_annotation(
-                annotation,
-                index=index,
-                merge=merge,
-                separator=separator,
-                type=type,
-            )
-        )
-
-    with pd.option_context("future.no_silent_downcasting", True):
-        return _concat(frames)
+    return from_annotations(
+        annotations,
+        merge=merge,
+        separator=separator,
+        type=type,
+    )
 
 
 def from_annotation(
@@ -74,7 +70,7 @@ def from_annotation(
     Args:
         obj: The annotation to convert.
         index: Root index of the created specification DataFrame.
-        merge: Whether to merge all subtypes into a single row.
+        merge: Whether to merge all sub-annotations into a single row.
         separator: Separator for concatenating root and sub-indices.
         type: Name of the column for the metadata-stripped annotations.
 
@@ -112,6 +108,43 @@ def from_annotation(
 
     with pd.option_context("future.no_silent_downcasting", True):
         return _merge(_concat(frames)) if merge else _concat(frames)
+
+
+def from_annotations(
+    obj: dict[str, Any],
+    /,
+    *,
+    merge: bool = True,
+    separator: str = "/",
+    type: str | None = "type",
+) -> pd.DataFrame:
+    """Create a specification DataFrame from given annotations.
+
+    Args:
+        obj: The annotations to convert.
+        merge: Whether to merge all sub-annotations into a single row.
+        separator: Separator for concatenating root and sub-indices.
+        type: Name of the column for the metadata-stripped annotations.
+
+    Returns:
+        Created specification DataFrame.
+
+    """
+    frames: list[pd.DataFrame] = []
+
+    for index, annotation in obj.items():
+        frames.append(
+            from_annotation(
+                annotation,
+                index=index,
+                merge=merge,
+                separator=separator,
+                type=type,
+            )
+        )
+
+    with pd.option_context("future.no_silent_downcasting", True):
+        return _concat(frames)
 
 
 def _concat(objs: Iterable[pd.DataFrame], /) -> pd.DataFrame:

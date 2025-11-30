@@ -6,7 +6,13 @@ from typing import Annotated as Ann
 # dependencies
 import pandas as pd
 from pandas.testing import assert_frame_equal
-from typespecs import ITSELF, Spec, from_annotated, from_annotation
+from typespecs import (
+    ITSELF,
+    Spec,
+    from_annotated,
+    from_annotation,
+    from_annotations,
+)
 
 
 def test_from_annotated_with_merge() -> None:
@@ -112,6 +118,66 @@ def test_from_annotation_without_merge() -> None:
 
     assert_frame_equal(
         from_annotation(obj, merge=False),
+        specs,
+        check_exact=True,
+    )
+
+
+def test_from_annotations_with_merge() -> None:
+    obj = {
+        "temp": Ann[
+            list[Ann[float, Spec(dtype=ITSELF)]],
+            Spec(name="Temperature", units="degC"),
+        ],
+        "wind": Ann[
+            list[Ann[float, Spec(dtype=ITSELF)]],
+            Spec(name="Wind speed", units="m/s"),
+        ],
+    }
+
+    specs = pd.DataFrame(
+        data={
+            "dtype": [float, float],
+            "name": ["Temperature", "Wind speed"],
+            "type": [list[float], list[float]],
+            "units": ["degC", "m/s"],
+        },
+        index=["temp", "wind"],
+        dtype=object,
+    )
+
+    assert_frame_equal(
+        from_annotations(obj, merge=True),
+        specs,
+        check_exact=True,
+    )
+
+
+def test_from_annotations_without_merge() -> None:
+    obj = {
+        "temp": Ann[
+            list[Ann[float, Spec(dtype=ITSELF)]],
+            Spec(name="Temperature", units="degC"),
+        ],
+        "wind": Ann[
+            list[Ann[float, Spec(dtype=ITSELF)]],
+            Spec(name="Wind speed", units="m/s"),
+        ],
+    }
+
+    specs = pd.DataFrame(
+        data={
+            "dtype": [pd.NA, float, pd.NA, float],
+            "name": ["Temperature", pd.NA, "Wind speed", pd.NA],
+            "type": [list[float], float, list[float], float],
+            "units": ["degC", pd.NA, "m/s", pd.NA],
+        },
+        index=["temp", "temp/0", "wind", "wind/0"],
+        dtype=object,
+    )
+
+    assert_frame_equal(
+        from_annotations(obj, merge=False),
         specs,
         check_exact=True,
     )
