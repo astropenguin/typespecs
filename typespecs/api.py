@@ -1,9 +1,9 @@
-__all__ = ["from_annotated", "from_annotation"]
+__all__ = ["from_annotated", "from_annotation", "from_annotations"]
 
 
 # standard library
 from collections.abc import Iterable
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 
 
 # dependencies
@@ -22,6 +22,7 @@ def from_annotated(
     obj: HasAnnotations,
     /,
     data: str | None = "data",
+    default: dict[str, Any] | Any = pd.NA,
     merge: bool = True,
     separator: str = "/",
     type: str | None = "type",
@@ -31,7 +32,9 @@ def from_annotated(
     Args:
         obj: The object to convert.
         data: Name of the column for the actual data of the annotations.
-        merge: Whether to merge all subtypes into a single row.
+        default: Default value for each column. Either a single value
+            or a dictionary mapping column names to values is accepted.
+        merge: Whether to merge all sub-annotations into a single row.
         separator: Separator for concatenating root and sub-indices.
         type: Name of the column for the metadata-stripped annotations.
 
@@ -39,31 +42,29 @@ def from_annotated(
         Created specification DataFrame.
 
     """
-    frames: list[pd.DataFrame] = []
+    if data is None:
+        annotations = get_annotations(obj)
+    else:
+        annotations: dict[str, Any] = {}
 
-    for index, annotation in get_annotations(obj).items():
-        if data is not None:
-            data_ = getattr(obj, index, pd.NA)
-            annotation = Annotated[annotation, Spec({data: data_})]
+        for index, annotation in get_annotations(obj).items():
+            spec = Spec({data: getattr(obj, index, pd.NA)})
+            annotations[index] = Annotated[annotation, spec]
 
-        frames.append(
-            from_annotation(
-                annotation,
-                index=index,
-                merge=merge,
-                separator=separator,
-                type=type,
-            )
-        )
-
-    with pd.option_context("future.no_silent_downcasting", True):
-        return _concat(frames)
+    return from_annotations(
+        annotations,
+        default=default,
+        merge=merge,
+        separator=separator,
+        type=type,
+    )
 
 
 def from_annotation(
     obj: Any,
     /,
     *,
+    default: dict[str, Any] | Any = pd.NA,
     index: str = "root",
     merge: bool = True,
     separator: str = "/",
@@ -73,8 +74,10 @@ def from_annotation(
 
     Args:
         obj: The annotation to convert.
+        default: Default value for each column. Either a single value
+            or a dictionary mapping column names to values is accepted.
         index: Root index of the created specification DataFrame.
-        merge: Whether to merge all subtypes into a single row.
+        merge: Whether to merge all sub-annotations into a single row.
         separator: Separator for concatenating root and sub-indices.
         type: Name of the column for the metadata-stripped annotations.
 
@@ -85,8 +88,8 @@ def from_annotation(
     if type is not None:
         obj = Annotated[obj, Spec({type: ITSELF})]
 
-    type_ = get_annotation(obj, recursive=True)
     specs: dict[str, Any] = {}
+    type_ = get_annotation(obj, recursive=True)
 
     for spec in filter(is_spec, get_metadata(obj)):
         specs.update(spec.replace(ITSELF, type_))
@@ -112,9 +115,50 @@ def from_annotation(
 
     with pd.option_context("future.no_silent_downcasting", True):
         if merge:
-            return _merge(_concat(frames))
+            return _default(_merge(_concat(frames)), default)
         else:
-            return _concat(frames)
+            return _default(_concat(frames), default)
+
+
+def from_annotations(
+    obj: dict[str, Any],
+    /,
+    *,
+    default: dict[str, Any] | Any = pd.NA,
+    merge: bool = True,
+    separator: str = "/",
+    type: str | None = "type",
+) -> pd.DataFrame:
+    """Create a specification DataFrame from given annotations.
+
+    Args:
+        obj: The annotations to convert.
+        default: Default value for each column. Either a single value
+            or a dictionary mapping column names to values is accepted.
+        merge: Whether to merge all sub-annotations into a single row.
+        separator: Separator for concatenating root and sub-indices.
+        type: Name of the column for the metadata-stripped annotations.
+
+    Returns:
+        Created specification DataFrame.
+
+    """
+    frames: list[pd.DataFrame] = []
+
+    for index, annotation in obj.items():
+        frames.append(
+            from_annotation(
+                annotation,
+                default=pd.NA,
+                index=index,
+                merge=merge,
+                separator=separator,
+                type=type,
+            )
+        )
+
+    with pd.option_context("future.no_silent_downcasting", True):
+        return _default(_concat(frames), default)
 
 
 def _concat(objs: Iterable[pd.DataFrame], /) -> pd.DataFrame:
@@ -140,6 +184,28 @@ def _concat(objs: Iterable[pd.DataFrame], /) -> pd.DataFrame:
         frame.loc[obj.index, obj.columns] = obj
 
     return frame
+
+
+def _default(obj: pd.DataFrame, value: dict[str, Any] | Any, /) -> pd.DataFrame:
+    """Fill missing values in given DataFrame with given value.
+
+    Args:
+        obj: DataFrame to fill.
+        value: Default value for each column. Either a single value
+            or a dictionary mapping column names to values is accepted.
+
+    Returns:
+        DataFrame with missing values filled.
+
+    """
+    if isinstance(value, dict):
+        values = cast(dict[str, Any], value)
+    else:
+        values = {key: value for key in obj.columns}
+
+    missings = {key: pd.NA for key in set(values) - set(obj.columns)}
+    replaces = {key: {pd.NA: val} for key, val in values.items()}
+    return obj.assign(**missings).replace(replaces)
 
 
 def _isna(obj: Any, /) -> bool:

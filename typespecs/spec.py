@@ -26,7 +26,7 @@ class Spec(dict[str, Any]):
     """Type specification.
 
     This class is essentially a dictionary and should be used
-    to distinguish type specification from other type annotations.
+    to distinguish type specification from other type metadata.
 
     """
 
