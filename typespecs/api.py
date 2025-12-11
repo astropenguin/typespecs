@@ -3,7 +3,7 @@ __all__ = ["from_annotated", "from_annotation", "from_annotations"]
 
 # standard library
 from collections.abc import Iterable
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 
 
 # dependencies
@@ -22,6 +22,7 @@ def from_annotated(
     obj: HasAnnotations,
     /,
     data: str | None = "data",
+    default: dict[str, Any] | Any = pd.NA,
     merge: bool = True,
     separator: str = "/",
     type: str | None = "type",
@@ -31,6 +32,8 @@ def from_annotated(
     Args:
         obj: The object to convert.
         data: Name of the column for the actual data of the annotations.
+        default: Default value for each column. Either a single value
+            or a dictionary mapping column names to values is accepted.
         merge: Whether to merge all sub-annotations into a single row.
         separator: Separator for concatenating root and sub-indices.
         type: Name of the column for the metadata-stripped annotations.
@@ -50,6 +53,7 @@ def from_annotated(
 
     return from_annotations(
         annotations,
+        default=default,
         merge=merge,
         separator=separator,
         type=type,
@@ -60,6 +64,7 @@ def from_annotation(
     obj: Any,
     /,
     *,
+    default: dict[str, Any] | Any = pd.NA,
     index: str = "root",
     merge: bool = True,
     separator: str = "/",
@@ -69,6 +74,8 @@ def from_annotation(
 
     Args:
         obj: The annotation to convert.
+        default: Default value for each column. Either a single value
+            or a dictionary mapping column names to values is accepted.
         index: Root index of the created specification DataFrame.
         merge: Whether to merge all sub-annotations into a single row.
         separator: Separator for concatenating root and sub-indices.
@@ -107,13 +114,17 @@ def from_annotation(
         )
 
     with pd.option_context("future.no_silent_downcasting", True):
-        return _merge(_concat(frames)) if merge else _concat(frames)
+        if merge:
+            return _default(_merge(_concat(frames)), default)
+        else:
+            return _default(_concat(frames), default)
 
 
 def from_annotations(
     obj: dict[str, Any],
     /,
     *,
+    default: dict[str, Any] | Any = pd.NA,
     merge: bool = True,
     separator: str = "/",
     type: str | None = "type",
@@ -122,6 +133,8 @@ def from_annotations(
 
     Args:
         obj: The annotations to convert.
+        default: Default value for each column. Either a single value
+            or a dictionary mapping column names to values is accepted.
         merge: Whether to merge all sub-annotations into a single row.
         separator: Separator for concatenating root and sub-indices.
         type: Name of the column for the metadata-stripped annotations.
@@ -136,6 +149,7 @@ def from_annotations(
         frames.append(
             from_annotation(
                 annotation,
+                default=pd.NA,
                 index=index,
                 merge=merge,
                 separator=separator,
@@ -144,7 +158,7 @@ def from_annotations(
         )
 
     with pd.option_context("future.no_silent_downcasting", True):
-        return _concat(frames)
+        return _default(_concat(frames), default)
 
 
 def _concat(objs: Iterable[pd.DataFrame], /) -> pd.DataFrame:
@@ -170,6 +184,28 @@ def _concat(objs: Iterable[pd.DataFrame], /) -> pd.DataFrame:
         frame.loc[obj.index, obj.columns] = obj
 
     return frame
+
+
+def _default(obj: pd.DataFrame, value: dict[str, Any] | Any, /) -> pd.DataFrame:
+    """Fill missing values in given DataFrame with given value.
+
+    Args:
+        obj: DataFrame to fill.
+        value: Default value for each column. Either a single value
+            or a dictionary mapping column names to values is accepted.
+
+    Returns:
+        DataFrame with missing values filled.
+
+    """
+    if isinstance(value, dict):
+        values = cast(dict[str, Any], value)
+    else:
+        values = {key: value for key in obj.columns}
+
+    missings = {key: pd.NA for key in set(values) - set(obj.columns)}
+    replaces = {key: {pd.NA: val} for key, val in values.items()}
+    return obj.assign(**missings).replace(replaces)
 
 
 def _isna(obj: Any, /) -> bool:
