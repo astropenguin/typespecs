@@ -9,17 +9,11 @@ from typing import Annotated, Any, cast
 # dependencies
 import pandas as pd
 from .spec import ITSELF, Spec, is_spec
-from .typing import (
-    HasAnnotations,
-    get_annotation,
-    get_annotations,
-    get_metadata,
-    get_subannotations,
-)
+from .typing import get_annotation, get_annotations, get_metadata, get_subannotations
 
 
 def from_annotated(
-    obj: HasAnnotations,
+    obj: Any,
     /,
     data: str | None = "data",
     default: dict[str, Any] | Any = pd.NA,
@@ -32,11 +26,14 @@ def from_annotated(
     Args:
         obj: The object to convert.
         data: Name of the column for the actual data of the annotations.
+            If it is ``None``, the data column will not be created.
         default: Default value for each column. Either a single value
             or a dictionary mapping column names to values is accepted.
         merge: Whether to merge all sub-annotations into a single row.
+            If it is ``False``, each sub-annotation will have its own row.
         separator: Separator for concatenating root and sub-indices.
         type: Name of the column for the metadata-stripped annotations.
+            If it is ``None``, the type column will not be created.
 
     Returns:
         Created specification DataFrame.
@@ -78,8 +75,10 @@ def from_annotation(
             or a dictionary mapping column names to values is accepted.
         index: Root index of the created specification DataFrame.
         merge: Whether to merge all sub-annotations into a single row.
+            If it is ``False``, each sub-annotation will have its own row.
         separator: Separator for concatenating root and sub-indices.
         type: Name of the column for the metadata-stripped annotations.
+            If it is ``None``, the type column will not be created.
 
     Returns:
         Created specification DataFrame.
@@ -136,8 +135,10 @@ def from_annotations(
         default: Default value for each column. Either a single value
             or a dictionary mapping column names to values is accepted.
         merge: Whether to merge all sub-annotations into a single row.
+            If it is ``False``, each sub-annotation will have its own row.
         separator: Separator for concatenating root and sub-indices.
         type: Name of the column for the metadata-stripped annotations.
+            If it is ``None``, the type column will not be created.
 
     Returns:
         Created specification DataFrame.

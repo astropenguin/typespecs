@@ -1,5 +1,4 @@
 __all__ = [
-    "HasAnnotations",
     "get_annotation",
     "get_annotations",
     "get_metadata",
@@ -10,20 +9,13 @@ __all__ = [
 
 
 # standard library
-from typing import Annotated, Any, Literal, Protocol
+from typing import Annotated, Any, Literal
 from typing import _strip_annotations  # type: ignore
 
 
 # dependencies
 from typing_extensions import get_args, get_origin
 from typing_extensions import get_annotations as _get_annotations
-
-
-# type hints
-class HasAnnotations(Protocol):
-    """Type hint for any object with annotations."""
-
-    __annotations__: dict[str, Any]
 
 
 def get_annotation(obj: Any, /, *, recursive: bool = False) -> Any:

@@ -1,6 +1,6 @@
 [project]
 name = "typespecs"
-version = "1.0.0rc3"
+version = "1.0.0"
 description = "Data specifications by type hints"
 readme = "README.md"
 keywords = [
@@ -30,7 +30,7 @@ classifiers = [
 
 [[project.authors]]
 name = "Akio Taniguchi"
-email = "taniguchi.akio@gmail.com"
+email = "a-taniguchi@mail.kitami-it.ac.jp"
 
 [project.license]
 file = "LICENSE"
