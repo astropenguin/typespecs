@@ -30,7 +30,7 @@ classifiers = [
 
 [[project.authors]]
 name = "Akio Taniguchi"
-email = "taniguchi.akio@gmail.com"
+email = "a-taniguchi@mail.kitami-it.ac.jp"
 
 [project.license]
 file = "LICENSE"
