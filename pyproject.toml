@@ -1,6 +1,6 @@
 [project]
 name = "typespecs"
-version = "1.0.0rc3"
+version = "1.0.0"
 description = "Data specifications by type hints"
 readme = "README.md"
 keywords = [
