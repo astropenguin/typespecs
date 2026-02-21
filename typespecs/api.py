@@ -8,7 +8,7 @@ from typing import Annotated, Any, cast
 
 # dependencies
 import pandas as pd
-from .spec import ITSELF, Spec, is_spec
+from .spec import ITSELF, Spec, SpecFrame, is_spec
 from .typing import get_annotation, get_annotations, get_metadata, get_subannotations
 
 
@@ -20,7 +20,7 @@ def from_annotated(
     merge: bool = True,
     separator: str = "/",
     type: str | None = "type",
-) -> pd.DataFrame:
+) -> SpecFrame:
     """Create a specification DataFrame from given object with annotations.
 
     Args:
@@ -66,7 +66,7 @@ def from_annotation(
     merge: bool = True,
     separator: str = "/",
     type: str | None = "type",
-) -> pd.DataFrame:
+) -> SpecFrame:
     """Create a specification DataFrame from given annotation.
 
     Args:
@@ -88,10 +88,10 @@ def from_annotation(
         obj = Annotated[obj, Spec({type: ITSELF})]
 
     specs: dict[str, Any] = {}
-    type_ = get_annotation(obj, recursive=True)
+    itself = get_annotation(obj, recursive=True)
 
     for spec in filter(is_spec, get_metadata(obj)):
-        specs.update(spec.replace(ITSELF, type_))
+        specs.update(_replace(spec, ITSELF, itself))
 
     frames = [
         pd.DataFrame(
@@ -114,9 +114,9 @@ def from_annotation(
 
     with pd.option_context("future.no_silent_downcasting", True):
         if merge:
-            return _default(_merge(_concat(frames)), default)
+            return SpecFrame(_default(_merge(_concat(frames)), default))
         else:
-            return _default(_concat(frames), default)
+            return SpecFrame(_default(_concat(frames), default))
 
 
 def from_annotations(
@@ -127,7 +127,7 @@ def from_annotations(
     merge: bool = True,
     separator: str = "/",
     type: str | None = "type",
-) -> pd.DataFrame:
+) -> SpecFrame:
     """Create a specification DataFrame from given annotations.
 
     Args:
@@ -159,7 +159,7 @@ def from_annotations(
         )
 
     with pd.option_context("future.no_silent_downcasting", True):
-        return _default(_concat(frames), default)
+        return SpecFrame(_default(_concat(frames), default))
 
 
 def _concat(objs: Iterable[pd.DataFrame], /) -> pd.DataFrame:
@@ -240,3 +240,18 @@ def _merge(obj: pd.DataFrame, /) -> pd.DataFrame:
         isna = obj.applymap(_isna)  # type: ignore
 
     return obj.mask(isna, obj.bfill()).head(1)  # type: ignore
+
+
+def _replace(obj: Spec, old: Any, new: Any, /) -> Spec:
+    """Replace occurrences of a value in a type specification with new one.
+
+    Args:
+        obj: Type specification to replace.
+        old: The value to be replaced.
+        new: The value to replace with.
+
+    Returns:
+        Replaced type specification.
+
+    """
+    return Spec((key, new if val == old else val) for key, val in obj.items())

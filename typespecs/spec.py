@@ -1,4 +1,4 @@
-__all__ = ["ITSELF", "ItselfType", "Spec", "is_spec"]
+__all__ = ["ITSELF", "ItselfType", "Spec", "SpecFrame", "is_spec", "is_specframe"]
 
 
 # standard library
@@ -7,7 +7,8 @@ from typing import Any
 
 
 # dependencies
-from typing_extensions import Self, TypeGuard
+import pandas as pd
+from typing_extensions import TypeGuard
 
 
 @dataclass(frozen=True)
@@ -30,21 +31,14 @@ class Spec(dict[str, Any]):
 
     """
 
-    def replace(self, old_value: Any, new_value: Any, /) -> Self:
-        """Replace occurrences of old value with new value.
 
-        Args:
-            old_value: The value to be replaced.
-            new_value: The value to replace with.
+class SpecFrame(pd.DataFrame):
+    """Specification DataFrame.
 
-        Returns:
-            Replaced type specification.
+    This class is essentially a pandas DataFrame and should be used
+    to distinguish specification DataFrame from other DataFrames.
 
-        """
-        return type(self)(
-            (key, new_value if value == old_value else value)
-            for key, value in self.items()
-        )
+    """
 
 
 def is_spec(obj: Any, /) -> TypeGuard[Spec]:
@@ -58,3 +52,16 @@ def is_spec(obj: Any, /) -> TypeGuard[Spec]:
 
     """
     return isinstance(obj, Spec)
+
+
+def is_specframe(obj: Any, /) -> TypeGuard[SpecFrame]:
+    """Check if given object is a specification DataFrame.
+
+    Args:
+        obj: Object to inspect.
+
+    Returns:
+        True if the object is a specification DataFrame. False otherwise.
+
+    """
+    return isinstance(obj, SpecFrame)

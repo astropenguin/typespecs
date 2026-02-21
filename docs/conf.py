@@ -1,4 +1,4 @@
-copyright = "2025 Akio Taniguchi"
+copyright = "2025-2026 Akio Taniguchi"
 extensions = [
     "myst_parser",
     "sphinx.ext.autodoc",
@@ -18,6 +18,6 @@ html_theme_options = {
     ],
     "switcher": {
         "json_url": "https://astropenguin.github.io/typespecs/_static/switcher.json",
-        "version_match": "1.0.0",
+        "version_match": "2.0.0",
     },
 }
