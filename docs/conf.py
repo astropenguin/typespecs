@@ -1,4 +1,4 @@
-copyright = "2025 Akio Taniguchi"
+copyright = "2025-2026 Akio Taniguchi"
 extensions = [
     "myst_parser",
     "sphinx.ext.autodoc",
