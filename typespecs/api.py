@@ -8,7 +8,7 @@ from typing import Annotated, Any, cast
 
 # dependencies
 import pandas as pd
-from .spec import ITSELF, Spec, is_spec
+from .spec import ITSELF, Spec, SpecFrame, is_spec
 from .typing import get_annotation, get_annotations, get_metadata, get_subannotations
 
 
@@ -20,7 +20,7 @@ def from_annotated(
     merge: bool = True,
     separator: str = "/",
     type: str | None = "type",
-) -> pd.DataFrame:
+) -> SpecFrame:
     """Create a specification DataFrame from given object with annotations.
 
     Args:
@@ -66,7 +66,7 @@ def from_annotation(
     merge: bool = True,
     separator: str = "/",
     type: str | None = "type",
-) -> pd.DataFrame:
+) -> SpecFrame:
     """Create a specification DataFrame from given annotation.
 
     Args:
@@ -114,9 +114,9 @@ def from_annotation(
 
     with pd.option_context("future.no_silent_downcasting", True):
         if merge:
-            return _default(_merge(_concat(frames)), default)
+            return SpecFrame(_default(_merge(_concat(frames)), default))
         else:
-            return _default(_concat(frames), default)
+            return SpecFrame(_default(_concat(frames), default))
 
 
 def from_annotations(
@@ -127,7 +127,7 @@ def from_annotations(
     merge: bool = True,
     separator: str = "/",
     type: str | None = "type",
-) -> pd.DataFrame:
+) -> SpecFrame:
     """Create a specification DataFrame from given annotations.
 
     Args:
@@ -159,7 +159,7 @@ def from_annotations(
         )
 
     with pd.option_context("future.no_silent_downcasting", True):
-        return _default(_concat(frames), default)
+        return SpecFrame(_default(_concat(frames), default))
 
 
 def _concat(objs: Iterable[pd.DataFrame], /) -> pd.DataFrame:

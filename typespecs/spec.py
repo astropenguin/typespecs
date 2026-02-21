@@ -1,4 +1,4 @@
-__all__ = ["ITSELF", "ItselfType", "Spec", "is_spec"]
+__all__ = ["ITSELF", "ItselfType", "Spec", "SpecFrame", "is_spec", "is_specframe"]
 
 
 # standard library
@@ -7,6 +7,7 @@ from typing import Any
 
 
 # dependencies
+import pandas as pd
 from typing_extensions import Self, TypeGuard
 
 
@@ -47,6 +48,15 @@ class Spec(dict[str, Any]):
         )
 
 
+class SpecFrame(pd.DataFrame):
+    """Specification DataFrame.
+
+    This class is essentially a pandas DataFrame and should be used
+    to distinguish specification DataFrame from other DataFrames.
+
+    """
+
+
 def is_spec(obj: Any, /) -> TypeGuard[Spec]:
     """Check if given object is a type specification.
 
@@ -58,3 +68,16 @@ def is_spec(obj: Any, /) -> TypeGuard[Spec]:
 
     """
     return isinstance(obj, Spec)
+
+
+def is_specframe(obj: Any, /) -> TypeGuard[SpecFrame]:
+    """Check if given object is a specification DataFrame.
+
+    Args:
+        obj: Object to inspect.
+
+    Returns:
+        True if the object is a specification DataFrame. False otherwise.
+
+    """
+    return isinstance(obj, SpecFrame)

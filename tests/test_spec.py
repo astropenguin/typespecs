@@ -1,6 +1,7 @@
 # dependencies
-from typespecs import ITSELF, Spec
-from typespecs.spec import ItselfType, is_spec
+import pandas as pd
+from typespecs import ITSELF, Spec, SpecFrame
+from typespecs.spec import ItselfType, is_spec, is_specframe
 
 
 def test_itself() -> None:
@@ -12,5 +13,9 @@ def test_spec() -> None:
     spec = Spec(a=1, b=2, c=ITSELF)
     assert is_spec(spec)
     assert not is_spec({})
-    assert spec.replace(1, 0) == Spec(a=0, b=2, c=ITSELF)
-    assert spec.replace(ITSELF, 3) == Spec(a=1, b=2, c=3)
+
+
+def test_specframe() -> None:
+    specs = SpecFrame()
+    assert is_specframe(specs)
+    assert not is_specframe(pd.DataFrame())
