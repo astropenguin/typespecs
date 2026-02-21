@@ -8,7 +8,7 @@ from typing import Any
 
 # dependencies
 import pandas as pd
-from typing_extensions import Self, TypeGuard
+from typing_extensions import TypeGuard
 
 
 @dataclass(frozen=True)
@@ -30,22 +30,6 @@ class Spec(dict[str, Any]):
     to distinguish type specification from other type metadata.
 
     """
-
-    def replace(self, old_value: Any, new_value: Any, /) -> Self:
-        """Replace occurrences of old value with new value.
-
-        Args:
-            old_value: The value to be replaced.
-            new_value: The value to replace with.
-
-        Returns:
-            Replaced type specification.
-
-        """
-        return type(self)(
-            (key, new_value if value == old_value else value)
-            for key, value in self.items()
-        )
 
 
 class SpecFrame(pd.DataFrame):
