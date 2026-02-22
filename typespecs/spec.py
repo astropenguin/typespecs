@@ -15,6 +15,8 @@ from typing_extensions import TypeGuard
 class ItselfType:
     """Sentinel object specifying metadata-stripped annotation itself."""
 
+    __array_ufunc__ = None
+
     def __repr__(self) -> str:
         return "<ITSELF>"
 

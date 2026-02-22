@@ -2,7 +2,7 @@
 # Visit https://bit.ly/cffinit to generate yours today!
 
 cff-version: 1.2.0
-title: typespecs
+title: Typespecs
 message: >-
   If you use this software, please cite it using the
   metadata from this file.
@@ -29,5 +29,5 @@ keywords:
   - typeddict
   - typing
 license: MIT
-version: 2.0.0
-date-released: '2026-02-21'
+version: 2.0.1
+date-released: '2026-02-22'
