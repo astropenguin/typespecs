@@ -1,0 +1,17 @@
+typespecs package
+=================
+
+.. automodule:: typespecs
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 2
+
+   typespecs.api
+   typespecs.spec
+   typespecs.typing
