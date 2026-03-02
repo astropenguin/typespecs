@@ -84,6 +84,9 @@ def from_annotation(
         Created specification DataFrame.
 
     """
+    if obj is Ellipsis:
+        return from_ellipsis(index=index, type=type)
+
     if type is not None:
         obj = Annotated[obj, Spec({type: ITSELF})]
 
@@ -160,6 +163,33 @@ def from_annotations(
 
     with pd.option_context("future.no_silent_downcasting", True):
         return SpecFrame(_default(_concat(frames), default))
+
+
+def from_ellipsis(
+    *,
+    index: str = "root",
+    type: str | None = "type",
+) -> SpecFrame:
+    """Create a specification DataFrame from an Ellipsis.
+
+    Args:
+        index: Root index of the created specification DataFrame.
+        type: Name of the column for the metadata-stripped annotations.
+            If it is ``None``, the type column will not be created.
+
+    Returns:
+        Created specification DataFrame.
+
+    Note:
+        This function is only for supporting Python 3.10 and 3.11
+        where ``Annotated[Ellipsis, ...]`` does not work properly.
+        It will be removed if they are no longer supported in the package.
+
+    """
+    if type is None:
+        return SpecFrame(index=[index], dtype=object)
+    else:
+        return SpecFrame(data={type: ...}, index=[index], dtype=object)
 
 
 def _concat(objs: Iterable[pd.DataFrame], /) -> pd.DataFrame:
