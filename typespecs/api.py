@@ -1,12 +1,25 @@
-__all__ = ["from_annotated", "from_annotation", "from_annotations"]
+__all__ = [
+    "ITSELF",
+    "ItselfType",
+    "Spec",
+    "SpecFrame",
+    "from_annotated",
+    "from_annotation",
+    "from_annotations",
+    "is_spec",
+    "is_specframe",
+]
 
 # standard library
-from typing import Annotated, Any
+from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Annotated, Any, overload
 
 # dependencies
 import pandas as pd
 from packaging.version import Version
-from .spec import ITSELF, Spec, SpecFrame, is_spec
+from readonlydict import ReadonlyDict
+from typing_extensions import Self, TypeGuard
 from .typing import (
     get_annotation,
     get_annotations,
@@ -19,6 +32,57 @@ from .utils import (
     merge as _merge,
     replace as _replace,
 )
+
+
+@dataclass(frozen=True)
+class ItselfType:
+    """Sentinel object specifying metadata-stripped annotation itself."""
+
+    __array_ufunc__ = None
+
+    def __repr__(self) -> str:
+        return "<ITSELF>"
+
+
+ITSELF = ItselfType()
+"""Sentinel object specifying metadata-stripped annotation itself."""
+
+
+class Spec(ReadonlyDict[str, Any]):
+    """Type specification.
+
+    This is a subclass of the read-only dictionary without any runtime modifications.
+    It is intended to distinguish a type specification from other type metadata.
+
+    """
+
+    if TYPE_CHECKING:
+        # fmt: off
+        @overload
+        def __new__(cls, **kwargs: Any) -> Self:...
+        @overload
+        def __new__(cls, mapping: Mapping[str, Any], /, **kwargs: Any) -> Self: ...
+        @overload
+        def __new__(cls, iterable: Iterable[tuple[str, Any]], /, **kwargs: Any) -> Self: ...
+        # fmt: on
+
+        @overload
+        @classmethod
+        def fromkeys(cls, iterable: Iterable[str], /) -> Self: ...
+        @overload
+        @classmethod
+        def fromkeys(cls, iterable: Iterable[str], value: Any, /) -> Self: ...
+
+        def __or__(self, other: Mapping[str, Any], /) -> Self: ...
+
+
+class SpecFrame(pd.DataFrame):
+    """Specification DataFrame.
+
+    This is a subclass of the pandas DataFrame without any runtime modifications.
+    It is intended to distinguish a specification DataFrame from other DataFrames.
+
+    """
 
 
 def from_annotated(
@@ -208,3 +272,29 @@ def from_ellipsis(
         return SpecFrame(index=[index], dtype=object)
     else:
         return SpecFrame(data={type: ...}, index=[index], dtype=object)
+
+
+def is_spec(obj: Any, /) -> TypeGuard[Spec]:
+    """Check if given object is a type specification.
+
+    Args:
+        obj: Object to inspect.
+
+    Returns:
+        True if the object is a type specification. False otherwise.
+
+    """
+    return isinstance(obj, Spec)
+
+
+def is_specframe(obj: Any, /) -> TypeGuard[SpecFrame]:
+    """Check if given object is a specification DataFrame.
+
+    Args:
+        obj: Object to inspect.
+
+    Returns:
+        True if the object is a specification DataFrame. False otherwise.
+
+    """
+    return isinstance(obj, SpecFrame)
