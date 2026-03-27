@@ -60,4 +60,6 @@ dev = [
 typeCheckingMode = "strict"
 reportArgumentType = "warning"
 reportCallIssue = "warning"
+reportIncompatibleMethodOverride = "warning"
+reportNoOverloadImplementation = "warning"
 reportUnknownMemberType = "warning"
