@@ -3,6 +3,7 @@ __all__ = [
     "api",
     "spec",
     "typing",
+    "utils",
     # aliases
     "ITSELF",
     "Spec",
@@ -15,6 +16,6 @@ __version__ = "2.0.2"
 
 
 # dependencies
-from . import api, spec, typing
+from . import api, spec, typing, utils
 from .api import from_annotated, from_annotation, from_annotations
 from .spec import ITSELF, Spec, SpecFrame
