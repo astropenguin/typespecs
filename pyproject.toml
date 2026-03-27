@@ -16,6 +16,7 @@ keywords = [
 requires-python = ">=3.10,<3.15"
 dependencies = [
     "pandas>=2,<3",
+    "readonlydict>=1,<2",
     "typing-extensions>=4,<5",
 ]
 classifiers = [
@@ -45,7 +46,7 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
-    "black>=25,<26",
+    "black>=25,<27",
     "ipython>=8,<10",
     "myst-parser>=3,<5",
     "pandas-stubs>=2,<3",
@@ -59,4 +60,6 @@ dev = [
 typeCheckingMode = "strict"
 reportArgumentType = "warning"
 reportCallIssue = "warning"
+reportIncompatibleMethodOverride = "warning"
+reportNoOverloadImplementation = "warning"
 reportUnknownMemberType = "warning"

@@ -7,11 +7,9 @@ __all__ = [
     "is_literal",
 ]
 
-
 # standard library
 from typing import Annotated, Any, Literal
 from typing import _strip_annotations  # type: ignore
-
 
 # dependencies
 from typing_extensions import get_args, get_origin

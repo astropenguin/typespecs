@@ -1,4 +1,8 @@
+author = "Akio Taniguchi"
 copyright = "2025-2026 Akio Taniguchi"
+project = "Typespecs"
+release = version = "2.0.2"
+
 extensions = [
     "myst_parser",
     "sphinx.ext.autodoc",
@@ -10,7 +14,7 @@ html_static_path = ["_static"]
 html_theme = "pydata_sphinx_theme"
 html_theme_options = {
     "github_url": "https://github.com/astropenguin/typespecs",
-    "logo": {"text": "Typespecs"},
+    "logo": {"text": project},
     "navbar_end": [
         "version-switcher",
         "theme-switcher",
@@ -18,6 +22,6 @@ html_theme_options = {
     ],
     "switcher": {
         "json_url": "https://astropenguin.github.io/typespecs/_static/switcher.json",
-        "version_match": "2.0.2",
+        "version_match": version,
     },
 }

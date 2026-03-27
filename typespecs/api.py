@@ -1,10 +1,8 @@
 __all__ = ["from_annotated", "from_annotation", "from_annotations"]
 
-
 # standard library
 from collections.abc import Iterable
 from typing import Annotated, Any, cast
-
 
 # dependencies
 import pandas as pd

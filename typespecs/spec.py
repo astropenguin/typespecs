@@ -1,14 +1,14 @@
 __all__ = ["ITSELF", "ItselfType", "Spec", "SpecFrame", "is_spec", "is_specframe"]
 
-
 # standard library
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from typing import Any
-
+from typing import TYPE_CHECKING, Any, overload
 
 # dependencies
 import pandas as pd
-from typing_extensions import TypeGuard
+from readonlydict import ReadonlyDict
+from typing_extensions import Self, TypeGuard
 
 
 @dataclass(frozen=True)
@@ -25,20 +25,39 @@ ITSELF = ItselfType()
 """Sentinel object specifying metadata-stripped annotation itself."""
 
 
-class Spec(dict[str, Any]):
+class Spec(ReadonlyDict[str, Any]):
     """Type specification.
 
-    This class is essentially a dictionary and should be used
-    to distinguish type specification from other type metadata.
+    This is a subclass of the read-only dictionary without any runtime modifications.
+    It is intended to distinguish a type specification from other type metadata.
 
     """
+
+    if TYPE_CHECKING:
+        # fmt: off
+        @overload
+        def __new__(cls, **kwargs: Any) -> Self:...
+        @overload
+        def __new__(cls, mapping: Mapping[str, Any], /, **kwargs: Any) -> Self: ...
+        @overload
+        def __new__(cls, iterable: Iterable[tuple[str, Any]], /, **kwargs: Any) -> Self: ...
+        # fmt: on
+
+        @overload
+        @classmethod
+        def fromkeys(cls, iterable: Iterable[str], /) -> Self: ...
+        @overload
+        @classmethod
+        def fromkeys(cls, iterable: Iterable[str], value: Any, /) -> Self: ...
+
+        def __or__(self, other: Mapping[str, Any], /) -> Self: ...
 
 
 class SpecFrame(pd.DataFrame):
     """Specification DataFrame.
 
-    This class is essentially a pandas DataFrame and should be used
-    to distinguish specification DataFrame from other DataFrames.
+    This is a subclass of the pandas DataFrame without any runtime modifications.
+    It is intended to distinguish a specification DataFrame from other DataFrames.
 
     """
 
