@@ -8,6 +8,7 @@ from typing import Annotated, Any, cast
 import pandas as pd
 from .spec import ITSELF, Spec, SpecFrame, is_spec
 from .typing import get_annotation, get_annotations, get_metadata, get_subannotations
+from .utils import PANDAS_VERSION
 
 
 def from_annotated(
@@ -113,6 +114,12 @@ def from_annotation(
             )
         )
 
+    if PANDAS_VERSION.major >= 3:
+        if merge:
+            return SpecFrame(_default(_merge(_concat(frames)), default))
+        else:
+            return SpecFrame(_default(_concat(frames), default))
+
     with pd.option_context("future.no_silent_downcasting", True):
         if merge:
             return SpecFrame(_default(_merge(_concat(frames)), default))
@@ -158,6 +165,9 @@ def from_annotations(
                 type=type,
             )
         )
+
+    if PANDAS_VERSION.major >= 3:
+        return SpecFrame(_default(_concat(frames), default))
 
     with pd.option_context("future.no_silent_downcasting", True):
         return SpecFrame(_default(_concat(frames), default))
