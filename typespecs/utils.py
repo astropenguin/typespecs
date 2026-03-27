@@ -1,4 +1,4 @@
-__all__ = ["PANDAS_VERSION", "concat", "default", "merge"]
+__all__ = ["concat", "default", "merge"]
 
 # standard library
 from collections.abc import Iterable
@@ -6,10 +6,7 @@ from typing import Any, cast
 
 # dependencies
 import pandas as pd
-from packaging import version
-
-# constants
-PANDAS_VERSION = version.parse(pd.__version__)
+from packaging.version import Version
 
 
 def concat(objs: Iterable[pd.DataFrame], /) -> pd.DataFrame:
@@ -69,11 +66,9 @@ def merge(obj: pd.DataFrame, /) -> pd.DataFrame:
         Merged DataFrame.
 
     """
-    try:
-        # for pandas >= 2.1
+    if Version(pd.__version__) >= Version("2.1"):
         isna = obj.map(lambda obj: obj is pd.NA)  # type: ignore
-    except AttributeError:
-        # for pandas < 2.1
+    else:
         isna = obj.applymap(lambda obj: obj is pd.NA)  # type: ignore
 
     return obj.mask(isna, obj.bfill()).head(1)  # type: ignore

@@ -5,19 +5,10 @@ from typing import Annotated, Any
 
 # dependencies
 import pandas as pd
+from packaging.version import Version
 from .spec import ITSELF, Spec, SpecFrame, is_spec
-from .typing import (
-    get_annotation,
-    get_annotations,
-    get_metadata,
-    get_subannotations,
-)
-from .utils import (
-    PANDAS_VERSION,
-    concat as _concat,
-    default as _default,
-    merge as _merge,
-)
+from .typing import get_annotation, get_annotations, get_metadata, get_subannotations
+from .utils import concat as _concat, default as _default, merge as _merge
 
 
 def from_annotated(
@@ -123,7 +114,7 @@ def from_annotation(
             )
         )
 
-    if PANDAS_VERSION.major >= 3:
+    if Version(pd.__version__) >= Version("3"):
         if merge:
             return SpecFrame(_default(_merge(_concat(frames)), default))
         else:
@@ -175,7 +166,7 @@ def from_annotations(
             )
         )
 
-    if PANDAS_VERSION.major >= 3:
+    if Version(pd.__version__) >= Version("3"):
         return SpecFrame(_default(_concat(frames), default))
 
     with pd.option_context("future.no_silent_downcasting", True):
