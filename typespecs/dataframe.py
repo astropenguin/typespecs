@@ -1,15 +1,12 @@
-__all__ = ["concat", "default", "merge", "replace"]
+__all__ = ["concat", "default", "merge"]
 
 # standard library
 from collections.abc import Iterable
-from typing import Any, Mapping, TypeVar, cast
+from typing import Any, cast
 
 # dependencies
 from packaging.version import Version
 from pandas import NA, __version__ as PANDAS_VERSION, DataFrame, Index
-
-# type variables
-TMapping = TypeVar("TMapping", bound=Mapping[Any, Any])
 
 
 def concat(objs: Iterable[DataFrame], /) -> DataFrame:
@@ -75,18 +72,3 @@ def merge(obj: DataFrame, /) -> DataFrame:
         isna = obj.applymap(lambda obj: obj is NA)  # type: ignore
 
     return obj.mask(isna, obj.bfill()).head(1)  # type: ignore
-
-
-def replace(obj: TMapping, old: Any, new: Any, /) -> TMapping:
-    """Replace the occurrences of a value in a mapping with new one.
-
-    Args:
-        obj: Mapping to replace.
-        old: The value to be replaced.
-        new: The value to replace with.
-
-    Returns:
-        New mapping with the replaced values.
-
-    """
-    return obj.__class__((k, new if v == old else v) for k, v in obj.items())

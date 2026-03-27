@@ -17,26 +17,11 @@ from typing import TYPE_CHECKING, Annotated, Any, overload
 
 # dependencies
 from packaging.version import Version
-from pandas import (
-    NA,
-    __version__ as PANDAS_VERSION,
-    DataFrame,
-    option_context as pandas_options,
-)
+from pandas import NA, __version__ as PANDAS_VERSION, DataFrame, option_context
 from readonlydict import ReadonlyDict
 from typing_extensions import Self, TypeGuard
-from .typing import (
-    get_annotation,
-    get_annotations,
-    get_metadata,
-    get_subannotations,
-)
-from .utils import (
-    concat as _concat,
-    default as _default,
-    merge as _merge,
-    replace as _replace,
-)
+from .dataframe import concat as _concat, default as _default, merge as _merge
+from .typing import get_annotation, get_annotations, get_metadata, get_subannotations
 
 
 @dataclass(frozen=True)
@@ -172,7 +157,8 @@ def from_annotation(
     itself = get_annotation(obj, recursive=True)
 
     for spec in filter(is_spec, get_metadata(obj)):
-        specs.update(_replace(spec, ITSELF, itself))
+        for key, value in spec.items():
+            specs[key] = itself if value == ITSELF else value
 
     frames = [
         DataFrame(
@@ -199,7 +185,7 @@ def from_annotation(
         else:
             return SpecFrame(_default(_concat(frames), default))
 
-    with pandas_options("future.no_silent_downcasting", True):
+    with option_context("future.no_silent_downcasting", True):
         if merge:
             return SpecFrame(_default(_merge(_concat(frames)), default))
         else:
@@ -248,7 +234,7 @@ def from_annotations(
     if Version(PANDAS_VERSION) >= Version("3"):
         return SpecFrame(_default(_concat(frames), default))
 
-    with pandas_options("future.no_silent_downcasting", True):
+    with option_context("future.no_silent_downcasting", True):
         return SpecFrame(_default(_concat(frames), default))
 
 
