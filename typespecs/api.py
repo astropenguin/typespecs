@@ -7,8 +7,18 @@ from typing import Annotated, Any
 import pandas as pd
 from packaging.version import Version
 from .spec import ITSELF, Spec, SpecFrame, is_spec
-from .typing import get_annotation, get_annotations, get_metadata, get_subannotations
-from .utils import concat as _concat, default as _default, merge as _merge
+from .typing import (
+    get_annotation,
+    get_annotations,
+    get_metadata,
+    get_subannotations,
+)
+from .utils import (
+    concat as _concat,
+    default as _default,
+    merge as _merge,
+    replace as _replace,
+)
 
 
 def from_annotated(
@@ -198,18 +208,3 @@ def from_ellipsis(
         return SpecFrame(index=[index], dtype=object)
     else:
         return SpecFrame(data={type: ...}, index=[index], dtype=object)
-
-
-def _replace(obj: Spec, old: Any, new: Any, /) -> Spec:
-    """Replace occurrences of a value in a type specification with new one.
-
-    Args:
-        obj: Type specification to replace.
-        old: The value to be replaced.
-        new: The value to replace with.
-
-    Returns:
-        Replaced type specification.
-
-    """
-    return Spec((key, new if val == old else val) for key, val in obj.items())
