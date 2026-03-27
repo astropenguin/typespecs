@@ -5,14 +5,14 @@ from collections.abc import Iterable
 from typing import Any, Mapping, TypeVar, cast
 
 # dependencies
-import pandas as pd
 from packaging.version import Version
+from pandas import NA, __version__ as PANDAS_VERSION, DataFrame, Index
 
 # type variables
 TMapping = TypeVar("TMapping", bound=Mapping[Any, Any])
 
 
-def concat(objs: Iterable[pd.DataFrame], /) -> pd.DataFrame:
+def concat(objs: Iterable[DataFrame], /) -> DataFrame:
     """Concatenate DataFrames with missing values filled with <NA>.
 
     Args:
@@ -24,10 +24,10 @@ def concat(objs: Iterable[pd.DataFrame], /) -> pd.DataFrame:
     """
     indexes = [obj.index for obj in objs]
     columns = [obj.columns for obj in objs]
-    frame = pd.DataFrame(
-        data=pd.NA,
-        index=pd.Index([]).append(indexes),
-        columns=pd.Index([]).append(columns).unique().sort_values(),
+    frame = DataFrame(
+        data=NA,
+        index=Index([]).append(indexes),
+        columns=Index([]).append(columns).unique().sort_values(),
         dtype=object,
     )
 
@@ -37,7 +37,7 @@ def concat(objs: Iterable[pd.DataFrame], /) -> pd.DataFrame:
     return frame
 
 
-def default(obj: pd.DataFrame, value: dict[str, Any] | Any, /) -> pd.DataFrame:
+def default(obj: DataFrame, value: dict[str, Any] | Any, /) -> DataFrame:
     """Fill missing values in given DataFrame with given value.
 
     Args:
@@ -54,12 +54,12 @@ def default(obj: pd.DataFrame, value: dict[str, Any] | Any, /) -> pd.DataFrame:
     else:
         values = {key: value for key in obj.columns}
 
-    missings = {key: pd.NA for key in set(values) - set(obj.columns)}
-    replaces = {key: {pd.NA: val} for key, val in values.items()}
+    missings = {key: NA for key in set(values) - set(obj.columns)}
+    replaces = {key: {NA: val} for key, val in values.items()}
     return obj.assign(**missings).replace(replaces)
 
 
-def merge(obj: pd.DataFrame, /) -> pd.DataFrame:
+def merge(obj: DataFrame, /) -> DataFrame:
     """Merge multiple rows of a DataFrame into a single row.
 
     Args:
@@ -69,10 +69,10 @@ def merge(obj: pd.DataFrame, /) -> pd.DataFrame:
         Merged DataFrame.
 
     """
-    if Version(pd.__version__) >= Version("2.1"):
-        isna = obj.map(lambda obj: obj is pd.NA)  # type: ignore
+    if Version(PANDAS_VERSION) >= Version("2.1"):
+        isna = obj.map(lambda obj: obj is NA)  # type: ignore
     else:
-        isna = obj.applymap(lambda obj: obj is pd.NA)  # type: ignore
+        isna = obj.applymap(lambda obj: obj is NA)  # type: ignore
 
     return obj.mask(isna, obj.bfill()).head(1)  # type: ignore
 

@@ -16,8 +16,13 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Annotated, Any, overload
 
 # dependencies
-import pandas as pd
 from packaging.version import Version
+from pandas import (
+    NA,
+    __version__ as PANDAS_VERSION,
+    DataFrame,
+    option_context as pandas_options,
+)
 from readonlydict import ReadonlyDict
 from typing_extensions import Self, TypeGuard
 from .typing import (
@@ -76,7 +81,7 @@ class Spec(ReadonlyDict[str, Any]):
         def __or__(self, other: Mapping[str, Any], /) -> Self: ...
 
 
-class SpecFrame(pd.DataFrame):
+class SpecFrame(DataFrame):
     """Specification DataFrame.
 
     This is a subclass of the pandas DataFrame without any runtime modifications.
@@ -89,7 +94,7 @@ def from_annotated(
     obj: Any,
     /,
     data: str | None = "data",
-    default: dict[str, Any] | Any = pd.NA,
+    default: dict[str, Any] | Any = NA,
     merge: bool = True,
     separator: str = "/",
     type: str | None = "type",
@@ -118,7 +123,7 @@ def from_annotated(
         annotations: dict[str, Any] = {}
 
         for index, annotation in get_annotations(obj).items():
-            spec = Spec({data: getattr(obj, index, pd.NA)})
+            spec = Spec({data: getattr(obj, index, NA)})
             annotations[index] = Annotated[annotation, spec]
 
     return from_annotations(
@@ -134,7 +139,7 @@ def from_annotation(
     obj: Any,
     /,
     *,
-    default: dict[str, Any] | Any = pd.NA,
+    default: dict[str, Any] | Any = NA,
     index: str = "root",
     merge: bool = True,
     separator: str = "/",
@@ -170,7 +175,7 @@ def from_annotation(
         specs.update(_replace(spec, ITSELF, itself))
 
     frames = [
-        pd.DataFrame(
+        DataFrame(
             data={key: [value] for key, value in specs.items()},
             index=[index],
             dtype=object,
@@ -188,13 +193,13 @@ def from_annotation(
             )
         )
 
-    if Version(pd.__version__) >= Version("3"):
+    if Version(PANDAS_VERSION) >= Version("3"):
         if merge:
             return SpecFrame(_default(_merge(_concat(frames)), default))
         else:
             return SpecFrame(_default(_concat(frames), default))
 
-    with pd.option_context("future.no_silent_downcasting", True):
+    with pandas_options("future.no_silent_downcasting", True):
         if merge:
             return SpecFrame(_default(_merge(_concat(frames)), default))
         else:
@@ -205,7 +210,7 @@ def from_annotations(
     obj: dict[str, Any],
     /,
     *,
-    default: dict[str, Any] | Any = pd.NA,
+    default: dict[str, Any] | Any = NA,
     merge: bool = True,
     separator: str = "/",
     type: str | None = "type",
@@ -226,13 +231,13 @@ def from_annotations(
         Created specification DataFrame.
 
     """
-    frames: list[pd.DataFrame] = []
+    frames: list[DataFrame] = []
 
     for index, annotation in obj.items():
         frames.append(
             from_annotation(
                 annotation,
-                default=pd.NA,
+                default=NA,
                 index=index,
                 merge=merge,
                 separator=separator,
@@ -240,10 +245,10 @@ def from_annotations(
             )
         )
 
-    if Version(pd.__version__) >= Version("3"):
+    if Version(PANDAS_VERSION) >= Version("3"):
         return SpecFrame(_default(_concat(frames), default))
 
-    with pd.option_context("future.no_silent_downcasting", True):
+    with pandas_options("future.no_silent_downcasting", True):
         return SpecFrame(_default(_concat(frames), default))
 
 
