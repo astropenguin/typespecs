@@ -1,7 +1,6 @@
 # standard library
 from typing import Annotated as Ann, Literal as L, TypedDict
 
-
 # dependencies
 from typespecs.typing import (
     get_annotation,
