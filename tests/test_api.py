@@ -3,36 +3,23 @@ from dataclasses import dataclass
 from typing import Annotated as Ann
 
 # dependencies
-import pandas as pd
+from pandas import NA, DataFrame
 from pandas.testing import assert_frame_equal
 from typespecs import (
     ITSELF,
     ItselfType,
     Spec,
-    SpecFrame,
     from_annotated,
     from_annotation,
     from_annotations,
-    is_spec,
-    is_specframe,
 )
 
 
 def test_itself() -> None:
+    assert ItselfType() == ItselfType()
     assert ItselfType() == ITSELF
+    assert ItselfType() is not ItselfType()
     assert ItselfType() is not ITSELF
-
-
-def test_spec() -> None:
-    spec = Spec(a=1, b=2, c=ITSELF)
-    assert is_spec(spec)
-    assert not is_spec({})
-
-
-def test_specframe() -> None:
-    specs = SpecFrame()
-    assert is_specframe(specs)
-    assert not is_specframe(pd.DataFrame())
 
 
 def test_from_annotated() -> None:
@@ -48,20 +35,20 @@ def test_from_annotated() -> None:
         ]
 
     obj = Weather(temp=[20.0, 25.0], wind=[3.0, 5.0])
-    specs = pd.DataFrame(
+    specs = DataFrame(
         data={
-            "data": [[20.0, 25.0], pd.NA, [3.0, 5.0], pd.NA],
-            "dtype": [pd.NA, float, pd.NA, float],
-            "name": ["Temperature", pd.NA, "Wind speed", pd.NA],
+            "data": [[20.0, 25.0], NA, [3.0, 5.0], NA],
+            "dtype": [NA, float, NA, float],
+            "name": ["Temperature", NA, "Wind speed", NA],
             "type": [list[float], float, list[float], float],
-            "units": ["degC", pd.NA, "m/s", pd.NA],
+            "units": ["degC", NA, "m/s", NA],
         },
         index=["temp", "temp/0", "wind", "wind/0"],
         dtype=object,
     )
 
     assert_frame_equal(
-        from_annotated(obj, default=pd.NA, merge=False),
+        from_annotated(obj, default=NA, merge=False),
         specs,
         check_exact=True,
     )
@@ -80,7 +67,7 @@ def test_from_annotated_with_default() -> None:
         ]
 
     obj = Weather(temp=[20.0, 25.0], wind=[3.0, 5.0])
-    specs = pd.DataFrame(
+    specs = DataFrame(
         data={
             "data": [[20.0, 25.0], None, [3.0, 5.0], None],
             "dtype": [None, float, None, float],
@@ -112,7 +99,7 @@ def test_from_annotated_with_merge() -> None:
         ]
 
     obj = Weather(temp=[20.0, 25.0], wind=[3.0, 5.0])
-    specs = pd.DataFrame(
+    specs = DataFrame(
         data={
             "data": [[20.0, 25.0], [3.0, 5.0]],
             "dtype": [float, float],
@@ -125,7 +112,7 @@ def test_from_annotated_with_merge() -> None:
     )
 
     assert_frame_equal(
-        from_annotated(obj, default=pd.NA, merge=True),
+        from_annotated(obj, default=NA, merge=True),
         specs,
         check_exact=True,
     )
@@ -136,10 +123,10 @@ def test_from_annotation() -> None:
         list[Ann[int, Spec(dtype=ITSELF)]],
         Spec(category="data"),
     ]
-    specs = pd.DataFrame(
+    specs = DataFrame(
         data={
-            "category": ["data", pd.NA],
-            "dtype": [pd.NA, int],
+            "category": ["data", NA],
+            "dtype": [NA, int],
             "type": [list[int], int],
         },
         index=["root", "root/0"],
@@ -147,7 +134,7 @@ def test_from_annotation() -> None:
     )
 
     assert_frame_equal(
-        from_annotation(obj, default=pd.NA, merge=False),
+        from_annotation(obj, default=NA, merge=False),
         specs,
         check_exact=True,
     )
@@ -158,7 +145,7 @@ def test_from_annotation_with_default() -> None:
         list[Ann[int, Spec(dtype=ITSELF)]],
         Spec(category="data"),
     ]
-    specs = pd.DataFrame(
+    specs = DataFrame(
         data={
             "category": ["data", None],
             "dtype": [None, int],
@@ -180,7 +167,7 @@ def test_from_annotation_with_merge() -> None:
         list[Ann[int, Spec(dtype=ITSELF)]],
         Spec(category="data"),
     ]
-    specs = pd.DataFrame(
+    specs = DataFrame(
         data={
             "category": ["data"],
             "dtype": [int],
@@ -191,7 +178,7 @@ def test_from_annotation_with_merge() -> None:
     )
 
     assert_frame_equal(
-        from_annotation(obj, default=pd.NA, merge=True),
+        from_annotation(obj, default=NA, merge=True),
         specs,
         check_exact=True,
     )
@@ -209,19 +196,19 @@ def test_from_annotations() -> None:
         ],
     }
 
-    specs = pd.DataFrame(
+    specs = DataFrame(
         data={
-            "dtype": [pd.NA, float, pd.NA, float],
-            "name": ["Temperature", pd.NA, "Wind speed", pd.NA],
+            "dtype": [NA, float, NA, float],
+            "name": ["Temperature", NA, "Wind speed", NA],
             "type": [list[float], float, list[float], float],
-            "units": ["degC", pd.NA, "m/s", pd.NA],
+            "units": ["degC", NA, "m/s", NA],
         },
         index=["temp", "temp/0", "wind", "wind/0"],
         dtype=object,
     )
 
     assert_frame_equal(
-        from_annotations(obj, default=pd.NA, merge=False),
+        from_annotations(obj, default=NA, merge=False),
         specs,
         check_exact=True,
     )
@@ -239,7 +226,7 @@ def test_from_annotations_with_default() -> None:
         ],
     }
 
-    specs = pd.DataFrame(
+    specs = DataFrame(
         data={
             "dtype": [None, float, None, float],
             "name": ["Temperature", None, "Wind speed", None],
@@ -269,7 +256,7 @@ def test_from_annotations_with_merge() -> None:
         ],
     }
 
-    specs = pd.DataFrame(
+    specs = DataFrame(
         data={
             "dtype": [float, float],
             "name": ["Temperature", "Wind speed"],
@@ -281,7 +268,7 @@ def test_from_annotations_with_merge() -> None:
     )
 
     assert_frame_equal(
-        from_annotations(obj, default=pd.NA, merge=True),
+        from_annotations(obj, default=NA, merge=True),
         specs,
         check_exact=True,
     )

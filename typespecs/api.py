@@ -6,8 +6,6 @@ __all__ = [
     "from_annotated",
     "from_annotation",
     "from_annotations",
-    "is_spec",
-    "is_specframe",
 ]
 
 # standard library
@@ -19,8 +17,8 @@ from typing import TYPE_CHECKING, Annotated, Any, overload
 from packaging.version import Version
 from pandas import NA, __version__ as PANDAS_VERSION, DataFrame, option_context
 from readonlydict import ReadonlyDict
-from typing_extensions import Self, TypeGuard
-from .dataframe import concat as _concat, default as _default, merge as _merge
+from typing_extensions import Self
+from .frame import concat, default as default_, merge as merge_
 from .typing import get_annotation, get_annotations, get_metadata, get_subannotations
 
 
@@ -153,12 +151,13 @@ def from_annotation(
     if type is not None:
         obj = Annotated[obj, Spec({type: ITSELF})]
 
-    specs: dict[str, Any] = {}
     itself = get_annotation(obj, recursive=True)
+    specs: dict[str, Any] = {}
 
-    for spec in filter(is_spec, get_metadata(obj)):
-        for key, value in spec.items():
-            specs[key] = itself if value == ITSELF else value
+    for meta in get_metadata(obj):
+        if isinstance(meta, Spec):
+            for key, value in meta.items():
+                specs[key] = itself if value == ITSELF else value
 
     frames = [
         DataFrame(
@@ -181,15 +180,15 @@ def from_annotation(
 
     if Version(PANDAS_VERSION) >= Version("3"):
         if merge:
-            return SpecFrame(_default(_merge(_concat(frames)), default))
+            return SpecFrame(default_(merge_(concat(frames)), default))
         else:
-            return SpecFrame(_default(_concat(frames), default))
+            return SpecFrame(default_(concat(frames), default))
 
     with option_context("future.no_silent_downcasting", True):
         if merge:
-            return SpecFrame(_default(_merge(_concat(frames)), default))
+            return SpecFrame(default_(merge_(concat(frames)), default))
         else:
-            return SpecFrame(_default(_concat(frames), default))
+            return SpecFrame(default_(concat(frames), default))
 
 
 def from_annotations(
@@ -232,10 +231,10 @@ def from_annotations(
         )
 
     if Version(PANDAS_VERSION) >= Version("3"):
-        return SpecFrame(_default(_concat(frames), default))
+        return SpecFrame(default_(concat(frames), default))
 
     with option_context("future.no_silent_downcasting", True):
-        return SpecFrame(_default(_concat(frames), default))
+        return SpecFrame(default_(concat(frames), default))
 
 
 def from_ellipsis(
@@ -263,29 +262,3 @@ def from_ellipsis(
         return SpecFrame(index=[index], dtype=object)
     else:
         return SpecFrame(data={type: ...}, index=[index], dtype=object)
-
-
-def is_spec(obj: Any, /) -> TypeGuard[Spec]:
-    """Check if given object is a type specification.
-
-    Args:
-        obj: Object to inspect.
-
-    Returns:
-        True if the object is a type specification. False otherwise.
-
-    """
-    return isinstance(obj, Spec)
-
-
-def is_specframe(obj: Any, /) -> TypeGuard[SpecFrame]:
-    """Check if given object is a specification DataFrame.
-
-    Args:
-        obj: Object to inspect.
-
-    Returns:
-        True if the object is a specification DataFrame. False otherwise.
-
-    """
-    return isinstance(obj, SpecFrame)
