@@ -1,21 +1,85 @@
-__all__ = ["from_annotated", "from_annotation", "from_annotations"]
+__all__ = [
+    "ITSELF",
+    "ItselfType",
+    "Spec",
+    "SpecFrame",
+    "from_annotated",
+    "from_annotation",
+    "from_annotations",
+    "is_spec",
+    "is_specframe",
+]
 
 # standard library
-from collections.abc import Iterable
-from typing import Annotated, Any, cast
+from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Annotated, Any, overload
 
 # dependencies
-import pandas as pd
-from .spec import ITSELF, Spec, SpecFrame, is_spec
+from packaging.version import Version
+from pandas import NA, __version__ as PANDAS_VERSION, DataFrame, option_context
+from readonlydict import ReadonlyDict
+from typing_extensions import Self, TypeGuard
+from .dataframe import concat as _concat, default as _default, merge as _merge
 from .typing import get_annotation, get_annotations, get_metadata, get_subannotations
-from .utils import PANDAS_VERSION
+
+
+@dataclass(frozen=True)
+class ItselfType:
+    """Sentinel object specifying metadata-stripped annotation itself."""
+
+    __array_ufunc__ = None
+
+    def __repr__(self) -> str:
+        return "<ITSELF>"
+
+
+ITSELF = ItselfType()
+"""Sentinel object specifying metadata-stripped annotation itself."""
+
+
+class Spec(ReadonlyDict[str, Any]):
+    """Type specification.
+
+    This is a subclass of the read-only dictionary without any runtime modifications.
+    It is intended to distinguish a type specification from other type metadata.
+
+    """
+
+    if TYPE_CHECKING:
+        # fmt: off
+        @overload
+        def __new__(cls, **kwargs: Any) -> Self:...
+        @overload
+        def __new__(cls, mapping: Mapping[str, Any], /, **kwargs: Any) -> Self: ...
+        @overload
+        def __new__(cls, iterable: Iterable[tuple[str, Any]], /, **kwargs: Any) -> Self: ...
+        # fmt: on
+
+        @overload
+        @classmethod
+        def fromkeys(cls, iterable: Iterable[str], /) -> Self: ...
+        @overload
+        @classmethod
+        def fromkeys(cls, iterable: Iterable[str], value: Any, /) -> Self: ...
+
+        def __or__(self, other: Mapping[str, Any], /) -> Self: ...
+
+
+class SpecFrame(DataFrame):
+    """Specification DataFrame.
+
+    This is a subclass of the pandas DataFrame without any runtime modifications.
+    It is intended to distinguish a specification DataFrame from other DataFrames.
+
+    """
 
 
 def from_annotated(
     obj: Any,
     /,
     data: str | None = "data",
-    default: dict[str, Any] | Any = pd.NA,
+    default: dict[str, Any] | Any = NA,
     merge: bool = True,
     separator: str = "/",
     type: str | None = "type",
@@ -44,7 +108,7 @@ def from_annotated(
         annotations: dict[str, Any] = {}
 
         for index, annotation in get_annotations(obj).items():
-            spec = Spec({data: getattr(obj, index, pd.NA)})
+            spec = Spec({data: getattr(obj, index, NA)})
             annotations[index] = Annotated[annotation, spec]
 
     return from_annotations(
@@ -60,7 +124,7 @@ def from_annotation(
     obj: Any,
     /,
     *,
-    default: dict[str, Any] | Any = pd.NA,
+    default: dict[str, Any] | Any = NA,
     index: str = "root",
     merge: bool = True,
     separator: str = "/",
@@ -93,10 +157,11 @@ def from_annotation(
     itself = get_annotation(obj, recursive=True)
 
     for spec in filter(is_spec, get_metadata(obj)):
-        specs.update(_replace(spec, ITSELF, itself))
+        for key, value in spec.items():
+            specs[key] = itself if value == ITSELF else value
 
     frames = [
-        pd.DataFrame(
+        DataFrame(
             data={key: [value] for key, value in specs.items()},
             index=[index],
             dtype=object,
@@ -114,13 +179,13 @@ def from_annotation(
             )
         )
 
-    if PANDAS_VERSION.major >= 3:
+    if Version(PANDAS_VERSION) >= Version("3"):
         if merge:
             return SpecFrame(_default(_merge(_concat(frames)), default))
         else:
             return SpecFrame(_default(_concat(frames), default))
 
-    with pd.option_context("future.no_silent_downcasting", True):
+    with option_context("future.no_silent_downcasting", True):
         if merge:
             return SpecFrame(_default(_merge(_concat(frames)), default))
         else:
@@ -131,7 +196,7 @@ def from_annotations(
     obj: dict[str, Any],
     /,
     *,
-    default: dict[str, Any] | Any = pd.NA,
+    default: dict[str, Any] | Any = NA,
     merge: bool = True,
     separator: str = "/",
     type: str | None = "type",
@@ -152,13 +217,13 @@ def from_annotations(
         Created specification DataFrame.
 
     """
-    frames: list[pd.DataFrame] = []
+    frames: list[DataFrame] = []
 
     for index, annotation in obj.items():
         frames.append(
             from_annotation(
                 annotation,
-                default=pd.NA,
+                default=NA,
                 index=index,
                 merge=merge,
                 separator=separator,
@@ -166,10 +231,10 @@ def from_annotations(
             )
         )
 
-    if PANDAS_VERSION.major >= 3:
+    if Version(PANDAS_VERSION) >= Version("3"):
         return SpecFrame(_default(_concat(frames), default))
 
-    with pd.option_context("future.no_silent_downcasting", True):
+    with option_context("future.no_silent_downcasting", True):
         return SpecFrame(_default(_concat(frames), default))
 
 
@@ -200,96 +265,27 @@ def from_ellipsis(
         return SpecFrame(data={type: ...}, index=[index], dtype=object)
 
 
-def _concat(objs: Iterable[pd.DataFrame], /) -> pd.DataFrame:
-    """Concatenate DataFrames with missing values filled with <NA>.
-
-    Args:
-        objs: DataFrames to concatenate.
-
-    Returns:
-        Concatenated DataFrame.
-
-    """
-    indexes = [obj.index for obj in objs]
-    columns = [obj.columns for obj in objs]
-    frame = pd.DataFrame(
-        data=pd.NA,
-        index=pd.Index([]).append(indexes),
-        columns=pd.Index([]).append(columns).unique().sort_values(),
-        dtype=object,
-    )
-
-    for obj in objs:
-        frame.loc[obj.index, obj.columns] = obj
-
-    return frame
-
-
-def _default(obj: pd.DataFrame, value: dict[str, Any] | Any, /) -> pd.DataFrame:
-    """Fill missing values in given DataFrame with given value.
-
-    Args:
-        obj: DataFrame to fill.
-        value: Default value for each column. Either a single value
-            or a dictionary mapping column names to values is accepted.
-
-    Returns:
-        DataFrame with missing values filled.
-
-    """
-    if isinstance(value, dict):
-        values = cast(dict[str, Any], value)
-    else:
-        values = {key: value for key in obj.columns}
-
-    missings = {key: pd.NA for key in set(values) - set(obj.columns)}
-    replaces = {key: {pd.NA: val} for key, val in values.items()}
-    return obj.assign(**missings).replace(replaces)
-
-
-def _isna(obj: Any, /) -> bool:
-    """Check if given object is identical to <NA>.
+def is_spec(obj: Any, /) -> TypeGuard[Spec]:
+    """Check if given object is a type specification.
 
     Args:
         obj: Object to inspect.
 
     Returns:
-        True if the object is <NA>. False otherwise.
+        True if the object is a type specification. False otherwise.
 
     """
-    return obj is pd.NA
+    return isinstance(obj, Spec)
 
 
-def _merge(obj: pd.DataFrame, /) -> pd.DataFrame:
-    """Merge multiple rows of a DataFrame into a single row.
+def is_specframe(obj: Any, /) -> TypeGuard[SpecFrame]:
+    """Check if given object is a specification DataFrame.
 
     Args:
-        obj: DataFrame to merge.
+        obj: Object to inspect.
 
     Returns:
-        Merged DataFrame.
+        True if the object is a specification DataFrame. False otherwise.
 
     """
-    try:
-        # for pandas >= 2.1
-        isna = obj.map(_isna)
-    except AttributeError:
-        # for pandas < 2.1
-        isna = obj.applymap(_isna)  # type: ignore
-
-    return obj.mask(isna, obj.bfill()).head(1)  # type: ignore
-
-
-def _replace(obj: Spec, old: Any, new: Any, /) -> Spec:
-    """Replace occurrences of a value in a type specification with new one.
-
-    Args:
-        obj: Type specification to replace.
-        old: The value to be replaced.
-        new: The value to replace with.
-
-    Returns:
-        Replaced type specification.
-
-    """
-    return Spec((key, new if val == old else val) for key, val in obj.items())
+    return isinstance(obj, SpecFrame)

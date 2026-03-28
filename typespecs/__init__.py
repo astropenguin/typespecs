@@ -1,21 +1,22 @@
 __all__ = [
     # submodules
     "api",
-    "spec",
+    "dataframe",
     "typing",
-    "utils",
     # aliases
     "ITSELF",
+    "ItselfType",
     "Spec",
     "SpecFrame",
     "from_annotated",
     "from_annotation",
     "from_annotations",
+    "is_spec",
+    "is_specframe",
 ]
-__version__ = "2.0.2"
+__version__ = "3.0.0rc1"
 
 
 # dependencies
-from . import api, spec, typing, utils
-from .api import from_annotated, from_annotation, from_annotations
-from .spec import ITSELF, Spec, SpecFrame
+from . import api, dataframe, typing
+from .api import *
