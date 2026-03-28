@@ -1,0 +1,7 @@
+typespecs.dataframe module
+==========================
+
+.. automodule:: typespecs.dataframe
+   :members:
+   :show-inheritance:
+   :undoc-members:
