@@ -6,8 +6,6 @@ __all__ = [
     "from_annotated",
     "from_annotation",
     "from_annotations",
-    "is_spec",
-    "is_specframe",
 ]
 
 # standard library
@@ -19,7 +17,7 @@ from typing import TYPE_CHECKING, Annotated, Any, overload
 from packaging.version import Version
 from pandas import NA, __version__ as PANDAS_VERSION, DataFrame, option_context
 from readonlydict import ReadonlyDict
-from typing_extensions import Self, TypeGuard
+from typing_extensions import Self
 from .dataframe import concat as _concat, default as _default, merge as _merge
 from .typing import get_annotation, get_annotations, get_metadata, get_subannotations
 
@@ -153,12 +151,13 @@ def from_annotation(
     if type is not None:
         obj = Annotated[obj, Spec({type: ITSELF})]
 
-    specs: dict[str, Any] = {}
     itself = get_annotation(obj, recursive=True)
+    specs: dict[str, Any] = {}
 
-    for spec in filter(is_spec, get_metadata(obj)):
-        for key, value in spec.items():
-            specs[key] = itself if value == ITSELF else value
+    for meta in get_metadata(obj):
+        if isinstance(meta, Spec):
+            for key, value in meta.items():
+                specs[key] = itself if value == ITSELF else value
 
     frames = [
         DataFrame(
@@ -263,29 +262,3 @@ def from_ellipsis(
         return SpecFrame(index=[index], dtype=object)
     else:
         return SpecFrame(data={type: ...}, index=[index], dtype=object)
-
-
-def is_spec(obj: Any, /) -> TypeGuard[Spec]:
-    """Check if given object is a type specification.
-
-    Args:
-        obj: Object to inspect.
-
-    Returns:
-        True if the object is a type specification. False otherwise.
-
-    """
-    return isinstance(obj, Spec)
-
-
-def is_specframe(obj: Any, /) -> TypeGuard[SpecFrame]:
-    """Check if given object is a specification DataFrame.
-
-    Args:
-        obj: Object to inspect.
-
-    Returns:
-        True if the object is a specification DataFrame. False otherwise.
-
-    """
-    return isinstance(obj, SpecFrame)

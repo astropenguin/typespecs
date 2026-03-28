@@ -11,8 +11,6 @@ __all__ = [
     "from_annotated",
     "from_annotation",
     "from_annotations",
-    "is_spec",
-    "is_specframe",
 ]
 __version__ = "3.0.0rc1"
 
