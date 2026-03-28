@@ -1,7 +1,7 @@
 __all__ = [
     # submodules
     "api",
-    "dataframe",
+    "frame",
     "typing",
     # aliases
     "ITSELF",
@@ -16,5 +16,5 @@ __version__ = "3.0.0rc2"
 
 
 # dependencies
-from . import api, dataframe, typing
+from . import api, frame, typing
 from .api import *

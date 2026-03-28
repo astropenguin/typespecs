@@ -18,7 +18,7 @@ from packaging.version import Version
 from pandas import NA, __version__ as PANDAS_VERSION, DataFrame, option_context
 from readonlydict import ReadonlyDict
 from typing_extensions import Self
-from .dataframe import concat as _concat, default as _default, merge as _merge
+from .frame import concat, default as default_, merge as merge_
 from .typing import get_annotation, get_annotations, get_metadata, get_subannotations
 
 
@@ -180,15 +180,15 @@ def from_annotation(
 
     if Version(PANDAS_VERSION) >= Version("3"):
         if merge:
-            return SpecFrame(_default(_merge(_concat(frames)), default))
+            return SpecFrame(default_(merge_(concat(frames)), default))
         else:
-            return SpecFrame(_default(_concat(frames), default))
+            return SpecFrame(default_(concat(frames), default))
 
     with option_context("future.no_silent_downcasting", True):
         if merge:
-            return SpecFrame(_default(_merge(_concat(frames)), default))
+            return SpecFrame(default_(merge_(concat(frames)), default))
         else:
-            return SpecFrame(_default(_concat(frames), default))
+            return SpecFrame(default_(concat(frames), default))
 
 
 def from_annotations(
@@ -231,10 +231,10 @@ def from_annotations(
         )
 
     if Version(PANDAS_VERSION) >= Version("3"):
-        return SpecFrame(_default(_concat(frames), default))
+        return SpecFrame(default_(concat(frames), default))
 
     with option_context("future.no_silent_downcasting", True):
-        return SpecFrame(_default(_concat(frames), default))
+        return SpecFrame(default_(concat(frames), default))
 
 
 def from_ellipsis(
