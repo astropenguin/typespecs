@@ -1581,7 +1581,7 @@ wheels = [
 
 [[package]]
 name = "typespecs"
-version = "2.0.2"
+version = "3.0.0rc1"
 source = { editable = "." }
 dependencies = [
     { name = "packaging" },
