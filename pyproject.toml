@@ -1,6 +1,6 @@
 [project]
 name = "typespecs"
-version = "3.0.0rc2"
+version = "3.0.0"
 description = "Data specifications by type hints"
 readme = "README.md"
 keywords = [
@@ -16,8 +16,8 @@ keywords = [
 requires-python = ">=3.10,<4.0"
 dependencies = [
     "packaging>=24",
-    "pandas>=2,<4",
-    "readonlydict>=1,<2",
+    "pandas>=2",
+    "readonlydict>=1",
     "typing-extensions>=4",
 ]
 classifiers = [
@@ -51,7 +51,7 @@ dev = [
     "black>=25,<27",
     "ipython>=8,<10",
     "myst-parser>=4,<6",
-    "pandas-stubs>=2,<4",
+    "pandas-stubs>=2",
     "pydata-sphinx-theme>=0.16,<1.0",
     "pyright>=1,<2",
     "pytest>=8,<10",

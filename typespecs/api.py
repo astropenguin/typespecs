@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Annotated, Any, overload
 # dependencies
 from packaging.version import Version
 from pandas import NA, __version__ as PANDAS_VERSION, DataFrame, option_context
-from readonlydict import ReadonlyDict
+from readonlydict import ReadonlyDict, Tuples
 from typing_extensions import Self
 from .frame import concat, default as default_, merge as merge_
 from .typing import get_annotation, get_annotations, get_metadata, get_subannotations
@@ -45,14 +45,13 @@ class Spec(ReadonlyDict[str, Any]):
     """
 
     if TYPE_CHECKING:
-        # fmt: off
+
         @overload
-        def __new__(cls, **kwargs: Any) -> Self:...
+        def __new__(cls, **kwargs: Any) -> Self: ...
         @overload
         def __new__(cls, mapping: Mapping[str, Any], /, **kwargs: Any) -> Self: ...
         @overload
-        def __new__(cls, iterable: Iterable[tuple[str, Any]], /, **kwargs: Any) -> Self: ...
-        # fmt: on
+        def __new__(cls, iterable: Tuples[str, Any], /, **kwargs: Any) -> Self: ...
 
         @overload
         @classmethod
@@ -77,7 +76,7 @@ def from_annotated(
     obj: Any,
     /,
     data: str | None = "data",
-    default: dict[str, Any] | Any = NA,
+    default: Mapping[str, Any] | Any = NA,
     merge: bool = True,
     separator: str = "/",
     type: str | None = "type",
@@ -89,7 +88,7 @@ def from_annotated(
         data: Name of the column for the actual data of the annotations.
             If it is ``None``, the data column will not be created.
         default: Default value for each column. Either a single value
-            or a dictionary mapping column names to values is accepted.
+            or a mapping of column names to values is accepted.
         merge: Whether to merge all sub-annotations into a single row.
             If it is ``False``, each sub-annotation will have its own row.
         separator: Separator for concatenating root and sub-indices.
@@ -122,7 +121,7 @@ def from_annotation(
     obj: Any,
     /,
     *,
-    default: dict[str, Any] | Any = NA,
+    default: Mapping[str, Any] | Any = NA,
     index: str = "root",
     merge: bool = True,
     separator: str = "/",
@@ -133,7 +132,7 @@ def from_annotation(
     Args:
         obj: The annotation to convert.
         default: Default value for each column. Either a single value
-            or a dictionary mapping column names to values is accepted.
+            or a mapping of column names to values is accepted.
         index: Root index of the created specification DataFrame.
         merge: Whether to merge all sub-annotations into a single row.
             If it is ``False``, each sub-annotation will have its own row.
@@ -192,10 +191,10 @@ def from_annotation(
 
 
 def from_annotations(
-    obj: dict[str, Any],
+    obj: Mapping[str, Any],
     /,
     *,
-    default: dict[str, Any] | Any = NA,
+    default: Mapping[str, Any] | Any = NA,
     merge: bool = True,
     separator: str = "/",
     type: str | None = "type",
@@ -205,7 +204,7 @@ def from_annotations(
     Args:
         obj: The annotations to convert.
         default: Default value for each column. Either a single value
-            or a dictionary mapping column names to values is accepted.
+            or a mapping of column names to values is accepted.
         merge: Whether to merge all sub-annotations into a single row.
             If it is ``False``, each sub-annotation will have its own row.
         separator: Separator for concatenating root and sub-indices.

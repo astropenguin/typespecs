@@ -8,6 +8,12 @@
 
 Data specifications by type hints
 
+## Overview
+
+Typespecs is a lightweight Python library that leverages `typing.Annotated` to embed, extract, and manage metadata (such as units, categories, and descriptions) directly within your data structures.
+It keeps your code clean by binding specifications directly to your type hints.
+The extracted specifications are returned as a transparent subclass of `pandas.DataFrame`, making it instantly compatible with the rich PyData ecosystem.
+
 ## Installation
 
 ```bash
@@ -16,17 +22,21 @@ pip install typespecs
 
 ## Basic Usage
 
+You can attach metadata to your class fields using `Annotated` and the `typespecs.Spec` object.
+The `Spec` object acts as a read-only dictionary, ensuring your metadata remains immutable and safe from runtime modifications.
+Once your data structure is defined, use `typespecs.from_annotated` to parse the instance and extract both the actual data and its associated metadata into a `DataFrame` object.
+
 ```python
 from dataclasses import dataclass
 from typespecs import ITSELF, Spec, from_annotated
-from typing import Annotated as Ann
+from typing import Annotated as Ann, TypeVar
 
 
 @dataclass
 class Weather:
     temp: Ann[list[float], Spec(category="data", name="Temperature", units="K")]
     wind: Ann[list[float], Spec(category="data", name="Wind speed", units="m/s")]
-    loc: Ann[str, Spec(category="metadata", name="Observed location")]
+    loc: Ann[str, Spec(category="info", name="Observed location")]
 
 
 weather = Weather([273.15, 280.15], [5.0, 10.0], "Tokyo")
@@ -37,22 +47,27 @@ print(specs)
       category              data               name           type units
 temp      data  [273.15, 280.15]        Temperature    list[float]     K
 wind      data       [5.0, 10.0]         Wind speed    list[float]   m/s
-loc   metadata             Tokyo  Observed location  <class 'str'>  <NA>
+loc       info             Tokyo  Observed location  <class 'str'>  <NA>
 ```
 
 ## Advanced Usage
 
 ### Handling Sub-annotations
 
+Typespecs simplifies working with nested types.
+You can easily create reusable type aliases with built-in specifications.
+Furthermore, by using the special `typespecs.ITSELF` object, the library dynamically captures the subtype (e.g., `float` in `list[float]`) as one of metadata.
+
 ```python
-Float = Ann[float, Spec(dtype=ITSELF)]
+T = TypeVar("T")
+Dtype = Ann[T, Spec(dtype=ITSELF)]
 
 
 @dataclass
 class Weather:
-    temp: Ann[list[Float], Spec(category="data", name="Temperature", units="K")]
-    wind: Ann[list[Float], Spec(category="data", name="Wind speed", units="m/s")]
-    loc: Ann[str, Spec(category="metadata", name="Observed location")]
+    temp: Ann[list[Dtype[float]], Spec(category="data", name="Temperature", units="K")]
+    wind: Ann[list[Dtype[float]], Spec(category="data", name="Wind speed", units="m/s")]
+    loc: Ann[str, Spec(category="info", name="Observed location")]
 
 
 weather = Weather([273.15, 280.15], [5.0, 10.0], "Tokyo")
@@ -63,10 +78,13 @@ print(specs)
       category              data            dtype               name           type units
 temp      data  [273.15, 280.15]  <class 'float'>        Temperature    list[float]     K
 wind      data       [5.0, 10.0]  <class 'float'>         Wind speed    list[float]   m/s
-loc   metadata             Tokyo             <NA>  Observed location  <class 'str'>  <NA>
+loc       info             Tokyo             <NA>  Observed location  <class 'str'>  <NA>
 ```
 
 ### Handling Missing Values
+
+By default, missing metadata values are filled with `pandas.NA`.
+You can override this behavior and specify a custom fallback value by using the `default` parameter in `from_annotated`.
 
 ```python
 specs = from_annotated(weather, default=None)
@@ -76,10 +94,14 @@ print(specs)
       category              data            dtype               name           type units
 temp      data  [273.15, 280.15]  <class 'float'>        Temperature    list[float]     K
 wind      data       [5.0, 10.0]  <class 'float'>         Wind speed    list[float]   m/s
-loc   metadata             Tokyo             None  Observed location  <class 'str'>  None
+loc       info             Tokyo             None  Observed location  <class 'str'>  None
 ```
 
 ### Handling Full Specification
+
+By default, typespecs neatly merges nested metadata (e.g., `float` in `list[float]`) into a single parent row.
+If you need to inspect the exact structural hierarchy of your annotations, set `merge=False` in `from_annotated`.
+This unpacks the tree, distinguishing between the parent collection and its elements.
 
 ```python
 specs = from_annotated(weather, merge=False)
@@ -91,5 +113,5 @@ temp        data  [273.15, 280.15]             <NA>        Temperature      list
 temp/0      <NA>              <NA>  <class 'float'>               <NA>  <class 'float'>  <NA>
 wind        data       [5.0, 10.0]             <NA>         Wind speed      list[float]   m/s
 wind/0      <NA>              <NA>  <class 'float'>               <NA>  <class 'float'>  <NA>
-loc     metadata             Tokyo             <NA>  Observed location    <class 'str'>  <NA>
+loc         info             Tokyo             <NA>  Observed location    <class 'str'>  <NA>
 ```
