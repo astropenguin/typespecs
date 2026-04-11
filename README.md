@@ -83,8 +83,8 @@ loc       info             Tokyo             <NA>  Observed location  <class 'st
 
 ### Handling Missing Values
 
-By default, missing or undefined metadata values are filled with `pandas.NA`.
-You can override this behavior and specify a custom fallback value using the `default` parameter of `from_annotated`.
+By default, missing metadata values are filled with `pandas.NA`.
+You can override this behavior and specify a custom fallback value by using the `default` parameter in `from_annotated`.
 
 ```python
 specs = from_annotated(weather, default=None)
