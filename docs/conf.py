@@ -1,7 +1,7 @@
 author = "Akio Taniguchi"
 copyright = "2025-2026 Akio Taniguchi"
 project = "Typespecs"
-release = version = "3.0.0rc2"
+release = version = "3.0.0"
 
 extensions = [
     "myst_parser",
