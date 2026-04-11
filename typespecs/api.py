@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Annotated, Any, overload
 # dependencies
 from packaging.version import Version
 from pandas import NA, __version__ as PANDAS_VERSION, DataFrame, option_context
-from readonlydict import ReadonlyDict
+from readonlydict import ReadonlyDict, Tuples
 from typing_extensions import Self
 from .frame import concat, default as default_, merge as merge_
 from .typing import get_annotation, get_annotations, get_metadata, get_subannotations
@@ -45,14 +45,13 @@ class Spec(ReadonlyDict[str, Any]):
     """
 
     if TYPE_CHECKING:
-        # fmt: off
+
         @overload
-        def __new__(cls, **kwargs: Any) -> Self:...
+        def __new__(cls, **kwargs: Any) -> Self: ...
         @overload
         def __new__(cls, mapping: Mapping[str, Any], /, **kwargs: Any) -> Self: ...
         @overload
-        def __new__(cls, iterable: Iterable[tuple[str, Any]], /, **kwargs: Any) -> Self: ...
-        # fmt: on
+        def __new__(cls, iterable: Tuples[str, Any], /, **kwargs: Any) -> Self: ...
 
         @overload
         @classmethod
