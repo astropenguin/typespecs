@@ -1,6 +1,6 @@
 __all__ = [
     # submodules
-    "api",
+    "core",
     "frame",
     "typing",
     # aliases
@@ -16,5 +16,5 @@ __version__ = "3.0.0"
 
 
 # dependencies
-from . import api, frame, typing
-from .api import *
+from . import core, frame, typing
+from .core import *
