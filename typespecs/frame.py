@@ -1,4 +1,4 @@
-__all__ = ["concat", "default", "merge"]
+__all__ = ["SpecFrame", "concat", "default", "merge"]
 
 # standard library
 from collections.abc import Iterable, Mapping
@@ -7,6 +7,15 @@ from typing import Any, cast
 # dependencies
 from packaging.version import Version
 from pandas import NA, __version__ as PANDAS_VERSION, DataFrame, Index
+
+
+class SpecFrame(DataFrame):
+    """Specification DataFrame.
+
+    This is a subclass of the pandas DataFrame without any runtime modifications.
+    It is intended to distinguish a specification DataFrame from other DataFrames.
+
+    """
 
 
 def concat(frames: Iterable[DataFrame], /) -> DataFrame:
