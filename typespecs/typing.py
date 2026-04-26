@@ -25,7 +25,6 @@ def get_annotation(obj: Any, /, *, recursive: bool = False) -> Any:
 
     Returns:
         Metadata-stripped annotation of the object.
-
     """
     if recursive:
         return _strip_annotations(obj)  # type: ignore
@@ -46,7 +45,6 @@ def get_annotations(obj: Any, /) -> dict[str, Any]:
 
     Returns:
         Dictionary of all annotations of the object.
-
     """
     if hasattr(obj, "__annotations__"):
         return _get_annotations(obj)
@@ -62,7 +60,6 @@ def get_metadata(obj: Any, /) -> list[Any]:
 
     Returns:
         List of all metadata of the object.
-
     """
     return list(get_args(obj)[1:]) if has_metadata(obj) else []
 
@@ -75,7 +72,6 @@ def get_subannotations(obj: Any, /) -> list[Any]:
 
     Returns:
         List of all sub-annotations of the object.
-
     """
     if is_literal(annotation := get_annotation(obj)):
         return []
@@ -91,7 +87,6 @@ def has_metadata(obj: Any, /) -> bool:
 
     Returns:
         True if the object has metadata. False otherwise.
-
     """
     return get_origin(obj) is Annotated
 
@@ -104,6 +99,5 @@ def is_literal(obj: Any, /) -> bool:
 
     Returns:
         True if the object is a literal type. False otherwise.
-
     """
     return get_origin(obj) is Literal

@@ -2,7 +2,6 @@ __all__ = [
     "ITSELF",
     "ItselfType",
     "Spec",
-    "SpecFrame",
     "from_annotated",
     "from_annotation",
     "from_annotations",
@@ -18,7 +17,7 @@ from packaging.version import Version
 from pandas import NA, __version__ as PANDAS_VERSION, DataFrame, option_context
 from readonlydict import ReadonlyDict, Tuples
 from typing_extensions import Self
-from .frame import concat, default as default_, merge as merge_
+from .frame import SpecFrame, concat, default as default_, merge as merge_
 from .typing import get_annotation, get_annotations, get_metadata, get_subannotations
 
 
@@ -41,7 +40,6 @@ class Spec(ReadonlyDict[str, Any]):
 
     This is a subclass of the read-only dictionary without any runtime modifications.
     It is intended to distinguish a type specification from other type metadata.
-
     """
 
     if TYPE_CHECKING:
@@ -61,15 +59,6 @@ class Spec(ReadonlyDict[str, Any]):
         def fromkeys(cls, iterable: Iterable[str], value: Any, /) -> Self: ...
 
         def __or__(self, other: Mapping[str, Any], /) -> Self: ...
-
-
-class SpecFrame(DataFrame):
-    """Specification DataFrame.
-
-    This is a subclass of the pandas DataFrame without any runtime modifications.
-    It is intended to distinguish a specification DataFrame from other DataFrames.
-
-    """
 
 
 def from_annotated(
@@ -97,7 +86,6 @@ def from_annotated(
 
     Returns:
         Created specification DataFrame.
-
     """
     if data is None:
         annotations = get_annotations(obj)
@@ -142,7 +130,6 @@ def from_annotation(
 
     Returns:
         Created specification DataFrame.
-
     """
     if obj is Ellipsis:
         return from_ellipsis(index=index, type=type)
@@ -213,7 +200,6 @@ def from_annotations(
 
     Returns:
         Created specification DataFrame.
-
     """
     frames: list[DataFrame] = []
 
@@ -255,7 +241,6 @@ def from_ellipsis(
         This function is only for supporting Python 3.10 and 3.11
         where ``Annotated[Ellipsis, ...]`` does not work properly.
         It will be removed if they are no longer supported in the package.
-
     """
     if type is None:
         return SpecFrame(index=[index], dtype=object)

@@ -1,4 +1,4 @@
-__all__ = ["concat", "default", "merge"]
+__all__ = ["SpecFrame", "concat", "default", "merge"]
 
 # standard library
 from collections.abc import Iterable, Mapping
@@ -9,6 +9,14 @@ from packaging.version import Version
 from pandas import NA, __version__ as PANDAS_VERSION, DataFrame, Index
 
 
+class SpecFrame(DataFrame):
+    """Specification DataFrame.
+
+    This is a subclass of the pandas DataFrame without any runtime modifications.
+    It is intended to distinguish a specification DataFrame from other DataFrames.
+    """
+
+
 def concat(frames: Iterable[DataFrame], /) -> DataFrame:
     """Concatenate DataFrames with missing values filled with <NA>.
 
@@ -17,7 +25,6 @@ def concat(frames: Iterable[DataFrame], /) -> DataFrame:
 
     Returns:
         Concatenated DataFrame.
-
     """
     indexes = [frame.index for frame in frames]
     columns = [frame.columns for frame in frames]
@@ -44,7 +51,6 @@ def default(frame: DataFrame, value: Mapping[str, Any] | Any, /) -> DataFrame:
 
     Returns:
         DataFrame with missing values filled.
-
     """
     if isinstance(value, Mapping):
         values = cast(Mapping[str, Any], value)
@@ -64,7 +70,6 @@ def merge(frame: DataFrame, /) -> DataFrame:
 
     Returns:
         Merged DataFrame.
-
     """
     if Version(PANDAS_VERSION) >= Version("2.1"):
         isna = frame.map(lambda frame: frame is NA)  # type: ignore
