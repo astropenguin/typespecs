@@ -40,7 +40,6 @@ class Spec(ReadonlyDict[str, Any]):
 
     This is a subclass of the read-only dictionary without any runtime modifications.
     It is intended to distinguish a type specification from other type metadata.
-
     """
 
     if TYPE_CHECKING:
@@ -87,7 +86,6 @@ def from_annotated(
 
     Returns:
         Created specification DataFrame.
-
     """
     if data is None:
         annotations = get_annotations(obj)
@@ -132,7 +130,6 @@ def from_annotation(
 
     Returns:
         Created specification DataFrame.
-
     """
     if obj is Ellipsis:
         return from_ellipsis(index=index, type=type)
@@ -203,7 +200,6 @@ def from_annotations(
 
     Returns:
         Created specification DataFrame.
-
     """
     frames: list[DataFrame] = []
 
@@ -245,7 +241,6 @@ def from_ellipsis(
         This function is only for supporting Python 3.10 and 3.11
         where ``Annotated[Ellipsis, ...]`` does not work properly.
         It will be removed if they are no longer supported in the package.
-
     """
     if type is None:
         return SpecFrame(index=[index], dtype=object)
