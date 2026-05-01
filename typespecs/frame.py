@@ -8,6 +8,7 @@ from typing import Any, cast
 import pandas as pd
 from packaging.version import Version
 from pandas import __version__ as PANDAS_VERSION
+from typing_extensions import Self
 
 
 class SpecFrame(pd.DataFrame):
@@ -16,6 +17,10 @@ class SpecFrame(pd.DataFrame):
     This is a subclass of the pandas DataFrame without any runtime modifications.
     It is intended to distinguish a specification DataFrame from other DataFrames.
     """
+
+    @property
+    def _constructor(self) -> type[Self]:
+        return type(self)
 
 
 def concat(frames: Iterable[pd.DataFrame], /) -> pd.DataFrame:
