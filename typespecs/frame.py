@@ -5,11 +5,12 @@ from collections.abc import Iterable, Mapping
 from typing import Any, cast
 
 # dependencies
+import pandas as pd
 from packaging.version import Version
-from pandas import NA, __version__ as PANDAS_VERSION, DataFrame, Index
+from pandas import __version__ as PANDAS_VERSION
 
 
-class SpecFrame(DataFrame):
+class SpecFrame(pd.DataFrame):
     """Specification DataFrame.
 
     This is a subclass of the pandas DataFrame without any runtime modifications.
@@ -17,7 +18,7 @@ class SpecFrame(DataFrame):
     """
 
 
-def concat(frames: Iterable[DataFrame], /) -> DataFrame:
+def concat(frames: Iterable[pd.DataFrame], /) -> pd.DataFrame:
     """Concatenate DataFrames with missing values filled with <NA>.
 
     Args:
@@ -28,10 +29,10 @@ def concat(frames: Iterable[DataFrame], /) -> DataFrame:
     """
     indexes = [frame.index for frame in frames]
     columns = [frame.columns for frame in frames]
-    concat = DataFrame(
-        data=NA,
-        index=Index([]).append(indexes),
-        columns=Index([]).append(columns).unique().sort_values(),
+    concat = pd.DataFrame(
+        data=pd.NA,
+        index=pd.Index([]).append(indexes),
+        columns=pd.Index([]).append(columns).unique().sort_values(),
         dtype=object,
     )
 
@@ -41,7 +42,7 @@ def concat(frames: Iterable[DataFrame], /) -> DataFrame:
     return concat
 
 
-def default(frame: DataFrame, value: Mapping[str, Any] | Any, /) -> DataFrame:
+def default(frame: pd.DataFrame, value: Mapping[str, Any] | Any, /) -> pd.DataFrame:
     """Fill missing values in given DataFrame with given value.
 
     Args:
@@ -57,12 +58,12 @@ def default(frame: DataFrame, value: Mapping[str, Any] | Any, /) -> DataFrame:
     else:
         values = {key: value for key in frame.columns}
 
-    missings = {key: NA for key in set(values) - set(frame.columns)}
-    replaces = {key: {NA: val} for key, val in values.items()}
+    missings = {key: pd.NA for key in set(values) - set(frame.columns)}
+    replaces = {key: {pd.NA: val} for key, val in values.items()}
     return frame.assign(**missings).replace(replaces)
 
 
-def merge(frame: DataFrame, /) -> DataFrame:
+def merge(frame: pd.DataFrame, /) -> pd.DataFrame:
     """Merge multiple rows of a DataFrame into a single row.
 
     Args:
@@ -72,8 +73,8 @@ def merge(frame: DataFrame, /) -> DataFrame:
         Merged DataFrame.
     """
     if Version(PANDAS_VERSION) >= Version("2.1"):
-        isna = frame.map(lambda frame: frame is NA)  # type: ignore
+        isna = frame.map(lambda frame: frame is pd.NA)  # type: ignore
     else:
-        isna = frame.applymap(lambda frame: frame is NA)  # type: ignore
+        isna = frame.applymap(lambda frame: frame is pd.NA)  # type: ignore
 
     return frame.mask(isna, frame.bfill()).head(1)  # type: ignore

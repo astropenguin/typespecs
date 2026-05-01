@@ -27,20 +27,20 @@ The `Spec` object acts as a read-only dictionary, ensuring your metadata remains
 Once your data structure is defined, use `typespecs.from_annotated` to parse the instance and extract both the actual data and its associated metadata into a `DataFrame` object.
 
 ```python
+import typespecs as ts
 from dataclasses import dataclass
-from typespecs import ITSELF, Spec, from_annotated
 from typing import Annotated as Ann, TypeVar
 
 
 @dataclass
 class Weather:
-    temp: Ann[list[float], Spec(category="data", name="Temperature", units="K")]
-    wind: Ann[list[float], Spec(category="data", name="Wind speed", units="m/s")]
-    loc: Ann[str, Spec(category="info", name="Observed location")]
+    temp: Ann[list[float], ts.Spec(category="data", name="Temperature", units="K")]
+    wind: Ann[list[float], ts.Spec(category="data", name="Wind speed", units="m/s")]
+    loc: Ann[str, ts.Spec(category="info", name="Observed location")]
 
 
 weather = Weather([273.15, 280.15], [5.0, 10.0], "Tokyo")
-specs = from_annotated(weather)
+specs = ts.from_annotated(weather)
 print(specs)
 ```
 ```
@@ -60,18 +60,18 @@ Furthermore, by using the special `typespecs.ITSELF` object, the library dynamic
 
 ```python
 T = TypeVar("T")
-Dtype = Ann[T, Spec(dtype=ITSELF)]
+Dtype = Ann[T, ts.Spec(dtype=ts.ITSELF)]
 
 
 @dataclass
 class Weather:
-    temp: Ann[list[Dtype[float]], Spec(category="data", name="Temperature", units="K")]
-    wind: Ann[list[Dtype[float]], Spec(category="data", name="Wind speed", units="m/s")]
-    loc: Ann[str, Spec(category="info", name="Observed location")]
+    temp: Ann[list[Dtype[float]], ts.Spec(category="data", name="Temperature", units="K")]
+    wind: Ann[list[Dtype[float]], ts.Spec(category="data", name="Wind speed", units="m/s")]
+    loc: Ann[str, ts.Spec(category="info", name="Observed location")]
 
 
 weather = Weather([273.15, 280.15], [5.0, 10.0], "Tokyo")
-specs = from_annotated(weather)
+specs = ts.from_annotated(weather)
 print(specs)
 ```
 ```
@@ -87,7 +87,7 @@ By default, missing metadata values are filled with `pandas.NA`.
 You can override this behavior and specify a custom fallback value by using the `default` parameter in `from_annotated`.
 
 ```python
-specs = from_annotated(weather, default=None)
+specs = ts.from_annotated(weather, default=None)
 print(specs)
 ```
 ```
@@ -104,7 +104,7 @@ If you need to inspect the exact structural hierarchy of your annotations, set `
 This unpacks the tree, distinguishing between the parent collection and its elements.
 
 ```python
-specs = from_annotated(weather, merge=False)
+specs = ts.from_annotated(weather, merge=False)
 print(specs)
 ```
 ```
