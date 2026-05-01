@@ -13,8 +13,9 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Annotated, Any, overload
 
 # dependencies
+import pandas as pd
 from packaging.version import Version
-from pandas import NA, __version__ as PANDAS_VERSION, DataFrame, option_context
+from pandas import __version__ as PANDAS_VERSION
 from readonlydict import ReadonlyDict, Tuples
 from typing_extensions import Self
 from .frame import SpecFrame, concat, default as default_, merge as merge_
@@ -65,7 +66,7 @@ def from_annotated(
     obj: Any,
     /,
     data: str | None = "data",
-    default: Mapping[str, Any] | Any = NA,
+    default: Mapping[str, Any] | Any = pd.NA,
     merge: bool = True,
     separator: str = "/",
     type: str | None = "type",
@@ -93,7 +94,7 @@ def from_annotated(
         annotations: dict[str, Any] = {}
 
         for index, annotation in get_annotations(obj).items():
-            spec = Spec({data: getattr(obj, index, NA)})
+            spec = Spec({data: getattr(obj, index, pd.NA)})
             annotations[index] = Annotated[annotation, spec]
 
     return from_annotations(
@@ -109,7 +110,7 @@ def from_annotation(
     obj: Any,
     /,
     *,
-    default: Mapping[str, Any] | Any = NA,
+    default: Mapping[str, Any] | Any = pd.NA,
     index: str = "root",
     merge: bool = True,
     separator: str = "/",
@@ -146,7 +147,7 @@ def from_annotation(
                 specs[key] = itself if value == ITSELF else value
 
     frames = [
-        DataFrame(
+        pd.DataFrame(
             data={key: [value] for key, value in specs.items()},
             index=[index],
             dtype=object,
@@ -170,7 +171,7 @@ def from_annotation(
         else:
             return SpecFrame(default_(concat(frames), default))
 
-    with option_context("future.no_silent_downcasting", True):
+    with pd.option_context("future.no_silent_downcasting", True):
         if merge:
             return SpecFrame(default_(merge_(concat(frames)), default))
         else:
@@ -181,7 +182,7 @@ def from_annotations(
     obj: Mapping[str, Any],
     /,
     *,
-    default: Mapping[str, Any] | Any = NA,
+    default: Mapping[str, Any] | Any = pd.NA,
     merge: bool = True,
     separator: str = "/",
     type: str | None = "type",
@@ -201,13 +202,13 @@ def from_annotations(
     Returns:
         Created specification DataFrame.
     """
-    frames: list[DataFrame] = []
+    frames: list[pd.DataFrame] = []
 
     for index, annotation in obj.items():
         frames.append(
             from_annotation(
                 annotation,
-                default=NA,
+                default=pd.NA,
                 index=index,
                 merge=merge,
                 separator=separator,
@@ -218,7 +219,7 @@ def from_annotations(
     if Version(PANDAS_VERSION) >= Version("3"):
         return SpecFrame(default_(concat(frames), default))
 
-    with option_context("future.no_silent_downcasting", True):
+    with pd.option_context("future.no_silent_downcasting", True):
         return SpecFrame(default_(concat(frames), default))
 
 

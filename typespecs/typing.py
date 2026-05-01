@@ -12,8 +12,11 @@ from typing import Annotated, Any, Literal
 from typing import _strip_annotations  # type: ignore
 
 # dependencies
-from typing_extensions import get_args, get_origin
-from typing_extensions import get_annotations as _get_annotations
+from typing_extensions import (
+    get_annotations as _get_annotations,
+    get_args,
+    get_origin,
+)
 
 
 def get_annotation(obj: Any, /, *, recursive: bool = False) -> Any:
