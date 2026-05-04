@@ -12,7 +12,7 @@ Data specifications by type hints
 
 Typespecs is a lightweight Python library that leverages `typing.Annotated` to embed, extract, and manage metadata (such as units, categories, and descriptions) directly within your data structures.
 It keeps your code clean by binding specifications directly to your type hints.
-The extracted specifications are returned as a transparent subclass of `pandas.DataFrame`, making it instantly compatible with the rich PyData ecosystem.
+The extracted specifications are returned as `pandas.DataFrame`, making it instantly compatible with the rich PyData ecosystem.
 
 ## Installation
 

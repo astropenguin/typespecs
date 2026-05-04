@@ -18,7 +18,7 @@ from packaging.version import Version
 from pandas import __version__ as PANDAS_VERSION
 from readonlydict import ReadonlyDict, Tuples
 from typing_extensions import Self
-from .frame import SpecFrame, concat, default as default_, merge as merge_
+from .frame import concat, default as default_, merge as merge_
 from .typing import get_annotation, get_annotations, get_metadata, get_subannotations
 
 
@@ -71,7 +71,7 @@ def from_annotated(
     merge: bool = True,
     separator: str = "/",
     type: str | None = "type",
-) -> SpecFrame:
+) -> pd.DataFrame:
     """Create a specification DataFrame from given object with annotations.
 
     Args:
@@ -120,7 +120,7 @@ def from_annotation(
     merge: bool = True,
     separator: str = "/",
     type: str | None = "type",
-) -> SpecFrame:
+) -> pd.DataFrame:
     """Create a specification DataFrame from given annotation.
 
     Args:
@@ -177,15 +177,15 @@ def from_annotation(
 
     if Version(PANDAS_VERSION) >= Version("3"):
         if merge:
-            return SpecFrame(default_(merge_(concat(frames)), default))
+            return default_(merge_(concat(frames)), default)
         else:
-            return SpecFrame(default_(concat(frames), default))
+            return default_(concat(frames), default)
 
     with pd.option_context("future.no_silent_downcasting", True):
         if merge:
-            return SpecFrame(default_(merge_(concat(frames)), default))
+            return default_(merge_(concat(frames)), default)
         else:
-            return SpecFrame(default_(concat(frames), default))
+            return default_(concat(frames), default)
 
 
 def from_annotations(
@@ -197,7 +197,7 @@ def from_annotations(
     merge: bool = True,
     separator: str = "/",
     type: str | None = "type",
-) -> SpecFrame:
+) -> pd.DataFrame:
     """Create a specification DataFrame from given annotations.
 
     Args:
@@ -231,17 +231,17 @@ def from_annotations(
         )
 
     if Version(PANDAS_VERSION) >= Version("3"):
-        return SpecFrame(default_(concat(frames), default))
+        return default_(concat(frames), default)
 
     with pd.option_context("future.no_silent_downcasting", True):
-        return SpecFrame(default_(concat(frames), default))
+        return default_(concat(frames), default)
 
 
 def from_ellipsis(
     *,
     index: str = "root",
     type: str | None = "type",
-) -> SpecFrame:
+) -> pd.DataFrame:
     """Create a specification DataFrame from an Ellipsis.
 
     Args:
@@ -258,6 +258,6 @@ def from_ellipsis(
         It will be removed if they are no longer supported in the package.
     """
     if type is None:
-        return SpecFrame(index=[index], dtype=object)
+        return pd.DataFrame(index=[index], dtype=object)
     else:
-        return SpecFrame(data={type: ...}, index=[index], dtype=object)
+        return pd.DataFrame(data={type: ...}, index=[index], dtype=object)
