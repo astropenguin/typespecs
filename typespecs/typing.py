@@ -38,10 +38,8 @@ def get_annotation(obj: Any, /, *, recursive: bool = False) -> Any:
 def get_annotations(obj: Any, /) -> dict[str, Any]:
     """Return all annotations of given object.
 
-    Prior to Python 3.14, this is identical to
-    ``typing_extensions.get_annotations``.
-    For Python 3.14 and later, it falls back to
-    the object's class if ``__annotations__`` is missing.
+    If the object is an instance, this function retrieves
+    the annotations from its class rather than the instance itself.
 
     Args:
         obj: Object to inspect.
@@ -49,7 +47,7 @@ def get_annotations(obj: Any, /) -> dict[str, Any]:
     Returns:
         Dictionary of all annotations of the object.
     """
-    if hasattr(obj, "__annotations__"):
+    if isinstance(obj, type):
         return _get_annotations(obj)
     else:
         return _get_annotations(type(obj))
