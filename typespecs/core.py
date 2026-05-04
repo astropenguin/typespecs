@@ -67,6 +67,7 @@ def from_annotated(
     /,
     data: str | None = "data",
     default: Mapping[str, Any] | Any = pd.NA,
+    depth: int | None = None,
     merge: bool = True,
     separator: str = "/",
     type: str | None = "type",
@@ -77,6 +78,8 @@ def from_annotated(
         obj: The object to convert.
         data: Name of the column for the actual data of the annotations.
             If it is ``None``, the data column will not be created.
+        depth: Maximum depth of sub-annotations to search.
+            If it is ``None``, all sub-annotations will be searched.
         default: Default value for each column. Either a single value
             or a mapping of column names to values is accepted.
         merge: Whether to merge all sub-annotations into a single row.
@@ -100,6 +103,7 @@ def from_annotated(
     return from_annotations(
         annotations,
         default=default,
+        depth=depth,
         merge=merge,
         separator=separator,
         type=type,
@@ -111,6 +115,7 @@ def from_annotation(
     /,
     *,
     default: Mapping[str, Any] | Any = pd.NA,
+    depth: int | None = None,
     index: str = "root",
     merge: bool = True,
     separator: str = "/",
@@ -122,6 +127,8 @@ def from_annotation(
         obj: The annotation to convert.
         default: Default value for each column. Either a single value
             or a mapping of column names to values is accepted.
+        depth: Maximum depth of sub-annotations to search.
+            If it is ``None``, all sub-annotations will be searched.
         index: Root index of the created specification DataFrame.
         merge: Whether to merge all sub-annotations into a single row.
             If it is ``False``, each sub-annotation will have its own row.
@@ -154,16 +161,19 @@ def from_annotation(
         )
     ]
 
-    for subindex, subannotation in enumerate(get_subannotations(obj)):
-        frames.append(
-            from_annotation(
-                subannotation,
-                index=f"{index}{separator}{subindex}",
-                merge=False,
-                separator=separator,
-                type=type,
+    if depth is None or depth > 0:
+        for subindex, subannotation in enumerate(get_subannotations(obj)):
+            frames.append(
+                from_annotation(
+                    subannotation,
+                    default=pd.NA,
+                    depth=None if depth is None else depth - 1,
+                    index=f"{index}{separator}{subindex}",
+                    merge=False,
+                    separator=separator,
+                    type=type,
+                )
             )
-        )
 
     if Version(PANDAS_VERSION) >= Version("3"):
         if merge:
@@ -183,6 +193,7 @@ def from_annotations(
     /,
     *,
     default: Mapping[str, Any] | Any = pd.NA,
+    depth: int | None = None,
     merge: bool = True,
     separator: str = "/",
     type: str | None = "type",
@@ -193,6 +204,8 @@ def from_annotations(
         obj: The annotations to convert.
         default: Default value for each column. Either a single value
             or a mapping of column names to values is accepted.
+        depth: Maximum depth of sub-annotations to search.
+            If it is ``None``, all sub-annotations will be searched.
         merge: Whether to merge all sub-annotations into a single row.
             If it is ``False``, each sub-annotation will have its own row.
         separator: Separator for concatenating root and sub-indices.
@@ -209,6 +222,7 @@ def from_annotations(
             from_annotation(
                 annotation,
                 default=pd.NA,
+                depth=depth,
                 index=index,
                 merge=merge,
                 separator=separator,
