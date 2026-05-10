@@ -18,7 +18,7 @@ identifiers:
     value: 10.5281/zenodo.17681195
 repository-code: 'https://github.com/astropenguin/typespecs'
 url: 'https://astropenguin.github.io/typespecs'
-abstract: Data specifications by type hints
+abstract: Data specifications via type hints
 keywords:
   - annotation
   - dataclass
