@@ -25,7 +25,7 @@ pip install typespecs
 
 You can create and attach a type specification, [`typespecs.Spec(key=value, ...)`](https://astropenguin.github.io/typespecs/_apidoc/typespecs.html#typespecs.Spec), to a type hint of your data structure such as [Python's Data Classes](https://docs.python.org/3.14/library/dataclasses.html) and [Pydantic models](https://pydantic.dev/docs/validation/latest/concepts/models/).
 The `Spec` object acts as a read-only dictionary, ensuring your metadata remains immutable and safe from runtime modifications.
-Once your data structure is defined, use [`typespecs.from_annotated`](https://astropenguin.github.io/typespecs/_apidoc/typespecs.html#typespecs.from_annotated) to extract and aggregate the attached metadata into a specification DataFrame.
+Once your data structure is defined, use [`typespecs.from_annotated(obj)`](https://astropenguin.github.io/typespecs/_apidoc/typespecs.html#typespecs.from_annotated) to extract and aggregate the attached metadata into a specification DataFrame.
 By default, the actual data and the metadata-stripped type hints will also be stored in the `data` and `type` columns, respectively (you can control this behavior using the `data` and `type` parameters in `from_annotated`).
 ```python
 import typespecs as ts
@@ -159,7 +159,7 @@ wind      data       [5.0, 10.0]  <class 'float'>         Wind speed    list[flo
 loc       info             Tokyo             None  Observed location  <class 'str'>      1
 ```
 
-### Handling Annotation(s) Directly
+### Handling Type Hint(s) Directly
 
 You can create a specification DataFrame from type hint(s) using [`typespecs.from_annotation`](https://astropenguin.github.io/typespecs/_apidoc/typespecs.html#typespecs.from_annotation) and [`typespecs.from_annotations`](https://astropenguin.github.io/typespecs/_apidoc/typespecs.html#typespecs.from_annotations).
 This is useful when you want to directly handle type hints without defining them within a data structure.
