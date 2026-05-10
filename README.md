@@ -79,15 +79,50 @@ loc       info             Tokyo         City  <class 'str'>   <NA>
 
 ## Advanced Usage
 
-### Handling Sub-annotations
+### Handling Nested Types
 
 Typespecs simplifies working with nested types.
-You can easily create reusable type aliases with built-in specifications.
-Furthermore, by using the special `typespecs.ITSELF` object, the library dynamically captures the subtype (e.g., `float` in `list[float]`) as one of metadata.
-
+By default, the metadata attached to nested types will be merged into a single parent row.
 ```python
-T = TypeVar("T")
-Dtype = Ann[T, ts.Spec(dtype=ts.ITSELF)]
+Float = Ann[float, ts.Spec(dtype="f8")]
+
+
+@dataclass
+class Weather:
+    temp: Ann[list[Float], ts.Spec(category="data", name="Temperature", units="K")]
+    wind: Ann[list[Float], ts.Spec(category="data", name="Wind speed", units="m/s")]
+    loc: Ann[str, ts.Spec(category="info", name="Observed location")]
+
+
+weather = Weather([273.15, 280.15], [5.0, 10.0], "Tokyo")
+specs = ts.from_annotated(weather)
+print(specs)
+```
+```
+      category              data  dtype               name           type  units
+temp      data  [273.15, 280.15]     f8        Temperature    list[float]      K
+wind      data       [5.0, 10.0]     f8         Wind speed    list[float]    m/s
+loc       info             Tokyo   <NA>  Observed location  <class 'str'>   <NA>
+```
+
+You can disable this merging behavior using `merge=False` in `from_annotated`.
+```python
+specs = ts.from_annotated(weather, merge=False)
+print(specs)
+```
+```
+        category              data  dtype               name             type  units
+temp        data  [273.15, 280.15]   <NA>        Temperature      list[float]      K
+temp/0      <NA>              <NA>     f8               <NA>  <class 'float'>   <NA>
+wind        data       [5.0, 10.0]   <NA>         Wind speed      list[float]    m/s
+wind/0      <NA>              <NA>     f8               <NA>  <class 'float'>   <NA>
+loc         info             Tokyo   <NA>  Observed location    <class 'str'>   <NA>
+```
+
+Finally, you can include the nested type itself as part of the metadata using the special `typespecs.ITSELF` object.
+This is useful when you want to handle the inner type alongside other metadata within the specification DataFrame.
+```python
+Dtype = Ann[TypeVar("T"), ts.Spec(dtype=ts.ITSELF)]
 
 
 @dataclass
@@ -102,43 +137,52 @@ specs = ts.from_annotated(weather)
 print(specs)
 ```
 ```
-      category              data            dtype               name           type units
-temp      data  [273.15, 280.15]  <class 'float'>        Temperature    list[float]     K
-wind      data       [5.0, 10.0]  <class 'float'>         Wind speed    list[float]   m/s
-loc       info             Tokyo             <NA>  Observed location  <class 'str'>  <NA>
+      category              data            dtype               name           type  units
+temp      data  [273.15, 280.15]  <class 'float'>        Temperature    list[float]      K
+wind      data       [5.0, 10.0]  <class 'float'>         Wind speed    list[float]    m/s
+loc       info             Tokyo             <NA>  Observed location  <class 'str'>   <NA>
 ```
 
 ### Handling Missing Values
 
-By default, missing metadata values are filled with `pandas.NA`.
-You can override this behavior and specify a custom fallback value by using the `default` parameter in `from_annotated`.
+By default, missing metadata is filled with `pandas.NA` in a specification DataFrame.
+You can specify custom fallback values by using the `default` parameter in `from_annotated`.
 
 ```python
-specs = ts.from_annotated(weather, default=None)
+specs = ts.from_annotated(weather, default={"dtype": None, "units": "1"})
 print(specs)
 ```
 ```
-      category              data            dtype               name           type units
-temp      data  [273.15, 280.15]  <class 'float'>        Temperature    list[float]     K
-wind      data       [5.0, 10.0]  <class 'float'>         Wind speed    list[float]   m/s
-loc       info             Tokyo             None  Observed location  <class 'str'>  None
+      category              data            dtype               name           type  units
+temp      data  [273.15, 280.15]  <class 'float'>        Temperature    list[float]      K
+wind      data       [5.0, 10.0]  <class 'float'>         Wind speed    list[float]    m/s
+loc       info             Tokyo             None  Observed location  <class 'str'>      1
 ```
 
-### Handling Full Specification
+### Handling Annotation(s) Directly
 
-By default, typespecs neatly merges nested metadata (e.g., `float` in `list[float]`) into a single parent row.
-If you need to inspect the exact structural hierarchy of your annotations, set `merge=False` in `from_annotated`.
-This unpacks the tree, distinguishing between the parent collection and its elements.
-
+You can create a specification DataFrame from type hint(s) using [`typespecs.from_annotation`](https://astropenguin.github.io/typespecs/_apidoc/typespecs.html#typespecs.from_annotation) and [`typespecs.from_annotations`](https://astropenguin.github.io/typespecs/_apidoc/typespecs.html#typespecs.from_annotations).
+This is useful when you want to directly handle type hints without defining them within a data structure.
 ```python
-specs = ts.from_annotated(weather, merge=False)
+annotations = {
+      "temp": Ann[list[Dtype[float]], ts.Spec(category="data", name="Temperature", units="K")],
+      "wind": Ann[list[Dtype[float]], ts.Spec(category="data", name="Wind speed", units="m/s")],
+      "loc": Ann[str, ts.Spec(category="info", name="Observed location")],
+}
+specs = ts.from_annotations(annotations)
 print(specs)
 ```
 ```
-        category              data            dtype               name             type units
-temp        data  [273.15, 280.15]             <NA>        Temperature      list[float]     K
-temp/0      <NA>              <NA>  <class 'float'>               <NA>  <class 'float'>  <NA>
-wind        data       [5.0, 10.0]             <NA>         Wind speed      list[float]   m/s
-wind/0      <NA>              <NA>  <class 'float'>               <NA>  <class 'float'>  <NA>
-loc         info             Tokyo             <NA>  Observed location    <class 'str'>  <NA>
+      category            dtype               name           type  units
+temp      data  <class 'float'>        Temperature    list[float]      K
+wind      data  <class 'float'>         Wind speed    list[float]    m/s
+loc       info             <NA>  Observed location  <class 'str'>   <NA>
+```
+```python
+specs = ts.from_annotation(annotations["temp"])
+print(specs)
+```
+```
+      category            dtype         name         type  units
+root      data  <class 'float'>  Temperature  list[float]      K
 ```
