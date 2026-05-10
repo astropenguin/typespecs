@@ -1,8 +1,15 @@
 [project]
 name = "typespecs"
-version = "7.0.0"
+version = "7.0.1"
 description = "Data specifications via type hints"
 readme = "README.md"
+requires-python = ">=3.10,<4.0"
+dependencies = [
+    "packaging>=24",
+    "pandas>=2",
+    "readonlydict>=1",
+    "typing-extensions>=4",
+]
 keywords = [
     "annotation",
     "dataclass",
@@ -12,13 +19,6 @@ keywords = [
     "specification",
     "typeddict",
     "typing",
-]
-requires-python = ">=3.10,<4.0"
-dependencies = [
-    "packaging>=24",
-    "pandas>=2",
-    "readonlydict>=1",
-    "typing-extensions>=4",
 ]
 classifiers = [
     "License :: OSI Approved :: MIT License",

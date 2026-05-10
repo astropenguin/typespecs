@@ -10,7 +10,7 @@ type: software
 authors:
   - given-names: Akio
     family-names: Taniguchi
-    email: a-taniguchi@mail.kitami-it.ac.jp
+    email: mail@taniguchiak.io
     affiliation: Kitami Institute of Technology
     orcid: 'https://orcid.org/0000-0002-9695-6183'
 identifiers:
@@ -29,5 +29,5 @@ keywords:
   - typeddict
   - typing
 license: MIT
-version: 7.0.0
+version: 7.0.1
 date-released: '2026-05-10'
