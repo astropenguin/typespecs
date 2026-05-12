@@ -23,7 +23,7 @@ def coalesce(frame: pd.DataFrame, /) -> pd.DataFrame:
 
 
 def concat(frames: Iterable[pd.DataFrame], /) -> pd.DataFrame:
-    """Concatenate DataFrames with missing values filled with <NA>.
+    """Concatenate DataFrames row-wise with missing values filled with <NA>.
 
     Args:
         frames: DataFrames to concatenate.
@@ -31,14 +31,10 @@ def concat(frames: Iterable[pd.DataFrame], /) -> pd.DataFrame:
     Returns:
         Concatenated DataFrame.
     """
-    indexes = [frame.index for frame in frames]
-    columns = [frame.columns for frame in frames]
-    concat = pd.DataFrame(
-        data=pd.NA,
-        index=pd.Index([]).append(indexes),
-        columns=pd.Index([]).append(columns).unique().sort_values(),
-        dtype=object,
-    )
+    frames = list(frames)
+    index = [idx for frame in frames for idx in frame.index]
+    columns = sorted({col for frame in frames for col in frame.columns})
+    concat = pd.DataFrame(pd.NA, index, columns, dtype=object)
 
     for frame in frames:
         concat.loc[frame.index, frame.columns] = frame
