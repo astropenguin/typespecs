@@ -1,4 +1,4 @@
-__all__ = ["concat", "default", "merge"]
+__all__ = ["concat", "default", "isna", "merge"]
 
 # standard library
 from collections.abc import Iterable, Mapping
@@ -55,6 +55,21 @@ def default(frame: pd.DataFrame, value: Mapping[str, Any] | Any, /) -> pd.DataFr
     return frame.assign(**missings).replace(replaces)
 
 
+def isna(frame: pd.DataFrame, /) -> pd.DataFrame:
+    """Detect missing values (<NA> only) in given DataFrame.
+
+    Args:
+        frame: DataFrame to check.
+
+    Returns:
+        Boolean DataFrame indicating missing values.
+    """
+    if Version(PANDAS_VERSION) >= Version("2.1"):
+        return frame.map(lambda obj: obj is pd.NA)  # type: ignore
+    else:
+        return frame.applymap(lambda obj: obj is pd.NA)  # type: ignore
+
+
 def merge(frame: pd.DataFrame, /) -> pd.DataFrame:
     """Merge multiple rows of a DataFrame into a single row.
 
@@ -64,9 +79,4 @@ def merge(frame: pd.DataFrame, /) -> pd.DataFrame:
     Returns:
         Merged DataFrame.
     """
-    if Version(PANDAS_VERSION) >= Version("2.1"):
-        isna = frame.map(lambda frame: frame is pd.NA)  # type: ignore
-    else:
-        isna = frame.applymap(lambda frame: frame is pd.NA)  # type: ignore
-
-    return frame.mask(isna, frame.bfill()).head(1)  # type: ignore
+    return frame.mask(isna(frame), frame.bfill()).head(1)
