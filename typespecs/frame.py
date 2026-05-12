@@ -1,4 +1,4 @@
-__all__ = ["coalesce", "concat", "default", "isna"]
+__all__ = ["coalesce", "concat", "fillna", "isna"]
 
 # standard library
 from collections.abc import Iterable, Mapping
@@ -42,7 +42,7 @@ def concat(frames: Iterable[pd.DataFrame], /) -> pd.DataFrame:
     return concat
 
 
-def default(frame: pd.DataFrame, value: Mapping[str, Any] | Any, /) -> pd.DataFrame:
+def fillna(frame: pd.DataFrame, value: Mapping[str, Any] | Any, /) -> pd.DataFrame:
     """Fill missing values (<NA> only) in given DataFrame with given value.
 
     Args:
