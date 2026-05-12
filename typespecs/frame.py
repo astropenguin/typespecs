@@ -1,4 +1,4 @@
-__all__ = ["concat", "default", "isna", "merge"]
+__all__ = ["coalesce", "concat", "default", "isna"]
 
 # standard library
 from collections.abc import Iterable, Mapping
@@ -8,6 +8,18 @@ from typing import Any, cast
 import pandas as pd
 from packaging.version import Version
 from pandas import __version__ as PANDAS_VERSION
+
+
+def coalesce(frame: pd.DataFrame, /) -> pd.DataFrame:
+    """Coalesce multiple rows of a DataFrame into a single row.
+
+    Args:
+        frame: DataFrame to coalesce.
+
+    Returns:
+        Coalesced DataFrame (single row).
+    """
+    return frame.mask(isna(frame), frame.bfill()).head(1)
 
 
 def concat(frames: Iterable[pd.DataFrame], /) -> pd.DataFrame:
@@ -68,15 +80,3 @@ def isna(frame: pd.DataFrame, /) -> pd.DataFrame:
         return frame.map(lambda obj: obj is pd.NA)  # type: ignore
     else:
         return frame.applymap(lambda obj: obj is pd.NA)  # type: ignore
-
-
-def merge(frame: pd.DataFrame, /) -> pd.DataFrame:
-    """Merge multiple rows of a DataFrame into a single row.
-
-    Args:
-        frame: DataFrame to merge.
-
-    Returns:
-        Merged DataFrame.
-    """
-    return frame.mask(isna(frame), frame.bfill()).head(1)
