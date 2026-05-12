@@ -23,7 +23,7 @@ def coalesce(frame: pd.DataFrame, /) -> pd.DataFrame:
 
 
 def concat(frames: Iterable[pd.DataFrame], /) -> pd.DataFrame:
-    """Concatenate DataFrames row-wise with missing values filled with <NA>.
+    """Concatenate DataFrames row-wise with missing values filled with ``<NA>``.
 
     Args:
         frames: DataFrames to concatenate.
@@ -43,15 +43,17 @@ def concat(frames: Iterable[pd.DataFrame], /) -> pd.DataFrame:
 
 
 def fillna(frame: pd.DataFrame, value: Mapping[str, Any] | Any, /) -> pd.DataFrame:
-    """Fill missing values (<NA> only) in given DataFrame with given value.
+    """Fill missing values (``<NA>`` only) in given DataFrame with given value.
 
     Args:
         frame: DataFrame to fill.
         value: Default value for each column. Either a single value
             or a mapping of column names to values is accepted.
+            If the specified columns are not present in ``frame``,
+            each column filled with the specified value will be added.
 
     Returns:
-        DataFrame with missing values filled.
+        DataFrame with missing values (``<NA>`` only) filled.
     """
     frame = frame.copy()
 
@@ -72,13 +74,13 @@ def fillna(frame: pd.DataFrame, value: Mapping[str, Any] | Any, /) -> pd.DataFra
 
 
 def isna(frame: pd.DataFrame, /) -> pd.DataFrame:
-    """Detect missing values (<NA> only) in given DataFrame.
+    """Detect missing values (``<NA>`` only) in given DataFrame.
 
     Args:
         frame: DataFrame to check.
 
     Returns:
-        Boolean DataFrame indicating missing values.
+        Boolean DataFrame indicating missing values (``<NA>`` only).
     """
     if Version(PANDAS_VERSION) >= Version("2.1"):
         return frame.map(lambda obj: obj is pd.NA)  # type: ignore
