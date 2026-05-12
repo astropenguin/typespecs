@@ -43,7 +43,7 @@ def concat(frames: Iterable[pd.DataFrame], /) -> pd.DataFrame:
 
 
 def default(frame: pd.DataFrame, value: Mapping[str, Any] | Any, /) -> pd.DataFrame:
-    """Fill missing values in given DataFrame with given value.
+    """Fill missing values (<NA> only) in given DataFrame with given value.
 
     Args:
         frame: DataFrame to fill.
@@ -53,14 +53,22 @@ def default(frame: pd.DataFrame, value: Mapping[str, Any] | Any, /) -> pd.DataFr
     Returns:
         DataFrame with missing values filled.
     """
+    frame = frame.copy()
+
     if isinstance(value, Mapping):
         values = cast(Mapping[str, Any], value)
     else:
         values = {key: value for key in frame.columns}
 
-    missings = {key: pd.NA for key in set(values) - set(frame.columns)}
-    replaces = {key: {pd.NA: val} for key, val in values.items()}
-    return frame.assign(**missings).replace(replaces)
+    for key in set(values) - set(frame.columns):
+        frame[key] = pd.Series(pd.NA, frame.index, dtype=object)
+
+    replacements = pd.Series(
+        [values.get(key, pd.NA) for key in frame.columns],
+        frame.columns,
+        dtype=object,
+    )
+    return frame.mask(isna(frame), replacements, axis=1)
 
 
 def isna(frame: pd.DataFrame, /) -> pd.DataFrame:
