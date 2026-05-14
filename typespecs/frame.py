@@ -1,7 +1,8 @@
-__all__ = ["concat", "fillna", "isna", "rollup"]
+__all__ = ["concat", "fillna", "isna", "no_silent_downcasting", "rollup"]
 
 # standard library
 from collections.abc import Callable, Iterable, Mapping
+from contextlib import AbstractContextManager, nullcontext
 from functools import partial, reduce
 from typing import Any, Literal
 
@@ -79,6 +80,14 @@ def isna(frame: pd.DataFrame, /) -> pd.DataFrame:
         return frame.map(lambda obj: obj is pd.NA)  # type: ignore
     else:
         return frame.applymap(lambda obj: obj is pd.NA)  # type: ignore
+
+
+def no_silent_downcasting() -> AbstractContextManager[None]:
+    """Context manager to avoid silent downcasting for pandas < 3."""
+    if Version(PANDAS_VERSION) >= Version("3"):
+        return nullcontext()
+    else:
+        return pd.option_context("future.no_silent_downcasting", True)
 
 
 def rollup(

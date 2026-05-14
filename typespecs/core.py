@@ -14,11 +14,9 @@ from typing import TYPE_CHECKING, Annotated, Any, overload
 
 # dependencies
 import pandas as pd
-from packaging.version import Version
-from pandas import __version__ as PANDAS_VERSION
 from readonlydict import ReadonlyDict, Tuples
 from typing_extensions import Self
-from .frame import Resolution, concat, fillna, rollup
+from .frame import Resolution, concat, fillna, no_silent_downcasting, rollup
 from .typing import get_annotation, get_annotations, get_metadata, get_subannotations
 
 
@@ -182,7 +180,7 @@ def from_annotation(
         frame = pd.DataFrame(index=[index], dtype=object)
     else:
         frame = concat(
-                [
+            [
                 pd.DataFrame([spec], [dummy_index], dtype=object)
                 for dummy_index, spec in enumerate(specs)
             ]
@@ -207,13 +205,7 @@ def from_annotation(
                 )
             )
 
-    if Version(PANDAS_VERSION) >= Version("3"):
-        if merge:
-            return fillna(rollup(concat(frames)), default)
-        else:
-            return fillna(concat(frames), default)
-
-    with pd.option_context("future.no_silent_downcasting", True):
+    with no_silent_downcasting():
         if merge:
             return fillna(rollup(concat(frames)), default)
         else:
@@ -273,10 +265,7 @@ def from_annotations(
             )
         )
 
-    if Version(PANDAS_VERSION) >= Version("3"):
-        return fillna(concat(frames), default)
-
-    with pd.option_context("future.no_silent_downcasting", True):
+    with no_silent_downcasting():
         return fillna(concat(frames), default)
 
 
