@@ -18,7 +18,7 @@ from packaging.version import Version
 from pandas import __version__ as PANDAS_VERSION
 from readonlydict import ReadonlyDict, Tuples
 from typing_extensions import Self
-from .frame import coalesce, concat, fillna
+from .frame import concat, fillna, rollup
 from .typing import get_annotation, get_annotations, get_metadata, get_subannotations
 
 
@@ -177,13 +177,13 @@ def from_annotation(
 
     if Version(PANDAS_VERSION) >= Version("3"):
         if merge:
-            return fillna(coalesce(concat(frames)), default)
+            return fillna(rollup(concat(frames)), default)
         else:
             return fillna(concat(frames), default)
 
     with pd.option_context("future.no_silent_downcasting", True):
         if merge:
-            return fillna(coalesce(concat(frames)), default)
+            return fillna(rollup(concat(frames)), default)
         else:
             return fillna(concat(frames), default)
 

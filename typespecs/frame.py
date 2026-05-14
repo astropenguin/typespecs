@@ -1,25 +1,17 @@
-__all__ = ["coalesce", "concat", "fillna", "isna"]
+__all__ = ["concat", "fillna", "isna", "rollup"]
 
 # standard library
-from collections.abc import Iterable, Mapping
-from typing import Any, cast
+from collections.abc import Callable, Iterable, Mapping
+from functools import partial, reduce
+from typing import Any, Literal
 
 # dependencies
 import pandas as pd
 from packaging.version import Version
 from pandas import __version__ as PANDAS_VERSION
 
-
-def coalesce(frame: pd.DataFrame, /) -> pd.DataFrame:
-    """Coalesce multiple rows of a DataFrame into a single row.
-
-    Args:
-        frame: DataFrame to coalesce.
-
-    Returns:
-        Coalesced DataFrame (single row).
-    """
-    return frame.mask(isna(frame), frame.bfill()).head(1)
+# type hints
+Resolution = Callable[[Any, Any], Any] | Literal["override", "update"]
 
 
 def concat(frames: Iterable[pd.DataFrame], /) -> pd.DataFrame:
@@ -56,17 +48,18 @@ def fillna(frame: pd.DataFrame, value: Mapping[str, Any] | Any, /) -> pd.DataFra
         DataFrame with missing values (``<NA>`` only) filled.
     """
     frame = frame.copy()
+    values: dict[str, Any]
 
     if isinstance(value, Mapping):
-        values = cast(Mapping[str, Any], value)
+        values = dict(value)  # type: ignore
     else:
-        values = {key: value for key in frame.columns}
+        values = {col: value for col in frame.columns}
 
-    for key in set(values) - set(frame.columns):
-        frame[key] = pd.Series(pd.NA, frame.index, dtype=object)
+    for col in set(values) - set(frame.columns):
+        frame[col] = pd.Series(pd.NA, frame.index, dtype=object)
 
     replacements = pd.Series(
-        [values.get(key, pd.NA) for key in frame.columns],
+        [values.get(col, pd.NA) for col in frame.columns],
         frame.columns,
         dtype=object,
     )
@@ -86,3 +79,52 @@ def isna(frame: pd.DataFrame, /) -> pd.DataFrame:
         return frame.map(lambda obj: obj is pd.NA)  # type: ignore
     else:
         return frame.applymap(lambda obj: obj is pd.NA)  # type: ignore
+
+
+def rollup(
+    frame: pd.DataFrame,
+    conflict: Mapping[str, Resolution] | Resolution = "override",
+    /,
+) -> pd.DataFrame:
+    """Roll-up given DataFrame by resolving conflicts between rows.
+
+    Args:
+        frame: DataFrame to roll up.
+        conflict: Resolution strategy for conflicts between rows.
+            Either a single resolution or a mapping of column names
+            to resolutions is accepted. As built-in resolutions,
+            ``"override"`` (new value overrides old value; default behavior)
+            and ``"update"`` (new mapping updates old mapping) are supported.
+            A function that takes old and new values and returns
+            resolved value can also be accepted as a custom resolution.
+
+    Returns:
+        Rolled-up DataFrame.
+    """
+
+    def override(old: Any, new: Any, /) -> Any:
+        return old if new is pd.NA else new
+
+    def update(old: Any, new: Any, /) -> Any:
+        if old is pd.NA or new is pd.NA:
+            return override(old, new)
+        else:
+            return type(new)({**old, **new})
+
+    reducers: dict[str, Callable[[pd.Series], Any]] = {}
+    resolutions: dict[str, Resolution]
+
+    if isinstance(conflict, Mapping):
+        resolutions = {col: conflict.get(col, override) for col in frame.columns}
+    else:
+        resolutions = {col: conflict for col in frame.columns}
+
+    for col, resolution in resolutions.items():
+        if resolution == "override":
+            reducers[col] = partial(reduce, override)
+        elif resolution == "update":
+            reducers[col] = partial(reduce, update)
+        else:
+            reducers[col] = partial(reduce, resolution)
+
+    return pd.DataFrame([frame[::-1].agg(reducers)], frame.index[:1], dtype=object)
