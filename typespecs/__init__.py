@@ -11,7 +11,7 @@ __all__ = [
     "from_annotation",
     "from_annotations",
 ]
-__version__ = "8.0.0"
+__version__ = "9.0.0"
 
 
 # dependencies
