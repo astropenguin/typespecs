@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Annotated, Any, overload
 import pandas as pd
 from readonlydict import ReadonlyDict, Tuples
 from typing_extensions import Self
-from .frame import Resolution, concat, fillna, no_silent_downcasting, rollup
+from .frame import Resolution, collapse, concat, fillna, no_silent_downcasting
 from .typing import get_annotation, get_annotations, get_metadata, get_subannotations
 
 
@@ -185,7 +185,7 @@ def from_annotation(
                 for dummy_index, spec in enumerate(specs)
             ]
         )
-        frame = rollup(frame, conflict)
+        frame = collapse(frame, conflict=conflict)
         frame.index = [index]
 
     frames = [frame]
@@ -202,12 +202,12 @@ def from_annotation(
                     merge=False,
                     separator=separator,
                     type=type,
-                )
+                ),
             )
 
     with no_silent_downcasting():
         if merge:
-            return fillna(rollup(concat(frames)), default)
+            return fillna(collapse(concat(frames)[::-1], conflict=conflict), default)
         else:
             return fillna(concat(frames), default)
 
