@@ -185,7 +185,7 @@ def from_annotation(
                 for dummy_index, spec in enumerate(specs)
             ]
         )
-        frame = collapse(frame, conflict=conflict)
+        frame = collapse(frame, conflict)
         frame.index = [index]
 
     frames = [frame]
@@ -207,7 +207,7 @@ def from_annotation(
 
     with no_silent_downcasting():
         if merge:
-            return fillna(collapse(concat(frames)[::-1], conflict=conflict), default)
+            return fillna(collapse(concat(frames)[::-1], conflict), default)
         else:
             return fillna(concat(frames), default)
 

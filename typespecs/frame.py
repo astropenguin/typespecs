@@ -3,7 +3,7 @@ __all__ = ["collapse", "concat", "fillna", "isna", "no_silent_downcasting"]
 # standard library
 from collections.abc import Callable, Iterable, Mapping
 from contextlib import AbstractContextManager, nullcontext
-from functools import partial, reduce
+from functools import reduce
 from typing import Any, Literal
 
 # dependencies
@@ -12,14 +12,13 @@ from packaging.version import Version
 from pandas import __version__ as PANDAS_VERSION
 
 # type hints
-Resolution = Callable[[Any, Any], Any] | Literal["override", "update"]
+Resolution = Literal["override", "update"] | Callable[[Any, Any], Any]
 
 
 def collapse(
     frame: pd.DataFrame,
-    /,
-    *,
     conflict: Mapping[str, Resolution] | Resolution = "override",
+    /,
 ) -> pd.DataFrame:
     """Collapse given DataFrame by resolving conflicts between rows.
 
@@ -46,23 +45,30 @@ def collapse(
         else:
             return type(new)({**old, **new})
 
-    reducers: dict[str, Callable[[pd.Series], Any]] = {}
-    resolutions: dict[str, Resolution]
+    builtins: dict[str, Any] = {"override": override, "update": update}
+    conflicts: dict[str, Any]
 
     if isinstance(conflict, Mapping):
-        resolutions = {col: conflict.get(col, override) for col in frame.columns}
+        conflicts = {
+            col: builtins.get(resolution, resolution)
+            for col, resolution in conflict.items()  # type: ignore
+        }
     else:
-        resolutions = {col: conflict for col in frame.columns}
+        conflicts = dict.fromkeys(
+            frame.columns,
+            builtins.get(conflict, conflict),  # type: ignore
+        )
 
-    for col, resolution in resolutions.items():
-        if resolution == "override":
-            reducers[col] = partial(reduce, override)
-        elif resolution == "update":
-            reducers[col] = partial(reduce, update)
-        else:
-            reducers[col] = partial(reduce, resolution)
-
-    return pd.DataFrame([frame.agg(reducers)], frame.index[-1:], dtype=object)
+    return pd.DataFrame(
+        [
+            {
+                col: reduce(conflicts.get(col, override), frame[col])
+                for col in frame.columns
+            }
+        ],
+        frame.index[-1:],
+        dtype=object,
+    )
 
 
 def concat(frames: Iterable[pd.DataFrame], /) -> pd.DataFrame:
@@ -75,9 +81,12 @@ def concat(frames: Iterable[pd.DataFrame], /) -> pd.DataFrame:
         Concatenated DataFrame.
     """
     frames = list(frames)
-    index = [idx for frame in frames for idx in frame.index]
-    columns = sorted({col for frame in frames for col in frame.columns})
-    concat = pd.DataFrame(pd.NA, index, columns, dtype=object)
+    concat = pd.DataFrame(
+        pd.NA,
+        [idx for frame in frames for idx in frame.index],
+        sorted({col for frame in frames for col in frame.columns}),
+        dtype=object,
+    )
 
     for frame in frames:
         concat.loc[frame.index, frame.columns] = frame
@@ -85,7 +94,11 @@ def concat(frames: Iterable[pd.DataFrame], /) -> pd.DataFrame:
     return concat
 
 
-def fillna(frame: pd.DataFrame, value: Mapping[str, Any] | Any, /) -> pd.DataFrame:
+def fillna(
+    frame: pd.DataFrame,
+    value: Mapping[str, Any] | Any = pd.NA,
+    /,
+) -> pd.DataFrame:
     """Fill missing values (``<NA>`` only) in given DataFrame with given value.
 
     Args:
@@ -104,7 +117,7 @@ def fillna(frame: pd.DataFrame, value: Mapping[str, Any] | Any, /) -> pd.DataFra
     if isinstance(value, Mapping):
         values = dict(value)  # type: ignore
     else:
-        values = {col: value for col in frame.columns}
+        values = dict.fromkeys(frame.columns, value)
 
     for col in set(values) - set(frame.columns):
         frame[col] = pd.Series(pd.NA, frame.index, dtype=object)
