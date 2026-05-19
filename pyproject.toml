@@ -1,6 +1,6 @@
 [project]
 name = "typespecs"
-version = "8.0.0"
+version = "9.0.0"
 description = "Data specifications via type hints"
 readme = "README.md"
 requires-python = ">=3.10,<4.0"
