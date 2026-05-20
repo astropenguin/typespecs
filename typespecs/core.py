@@ -165,6 +165,7 @@ def from_annotation(
         obj = Annotated[obj, Spec({type: ITSELF})]
 
     itself = get_annotation(obj, recursive=True)
+    frames: list[pd.DataFrame] = []
     specs: list[dict[str, Any]] = []
 
     for meta in get_metadata(obj):
@@ -176,19 +177,14 @@ def from_annotation(
                 }
             )
 
-    if not specs:
-        frame = pd.DataFrame(index=[index], dtype=object)
-    else:
-        frame = concat(
-            [
-                pd.DataFrame([spec], [dummy_index], dtype=object)
-                for dummy_index, spec in enumerate(specs)
-            ]
+    if specs:
+        rows = (
+            pd.DataFrame([spec], [str(dummy_index)], dtype=object)
+            for dummy_index, spec in enumerate(specs)
         )
-        frame = collapse(frame, conflict)
-        frame.index = [index]
-
-    frames = [frame]
+        frames.append(collapse(concat(rows), conflict).set_axis([index]))
+    else:
+        frames.append(from_nothing().set_axis([index]))
 
     if depth is None or depth > 0:
         for subindex, subannotation in enumerate(get_subannotations(obj)):
@@ -266,7 +262,7 @@ def from_annotations(
         )
 
     with no_silent_downcasting():
-        return fillna(concat(frames), default)
+        return fillna(concat(frames), default) if frames else from_nothing()
 
 
 def from_ellipsis(
@@ -290,6 +286,20 @@ def from_ellipsis(
         It will be removed if they are no longer supported in the package.
     """
     if type is None:
-        return pd.DataFrame(index=[index], dtype=object)
+        return from_nothing().set_axis([index])
     else:
         return pd.DataFrame(data={type: ...}, index=[index], dtype=object)
+
+
+def from_nothing() -> pd.DataFrame:
+    """Create an empty specification DataFrame from nothing.
+
+    Returns:
+        Created specification DataFrame.
+    """
+    return pd.DataFrame(
+        None,
+        pd.Index([], dtype=str),
+        pd.Index([], dtype=str),
+        dtype=object,
+    )
