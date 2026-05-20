@@ -59,15 +59,17 @@ def collapse(
             builtins.get(conflict, conflict),  # type: ignore
         )
 
-    return pd.DataFrame(
-        [
-            {
-                col: reduce(conflicts.get(col, override), frame[col])
-                for col in frame.columns
-            }
-        ],
-        frame.index[-1:],
-        dtype=object,
+    reduced = {
+        # fmt: off
+        col: reduce(conflicts.get(col, override), frame[col])
+        for col in frame.columns
+        # fmt: on
+    }
+    return (
+        # fmt: off
+        pd.DataFrame([reduced], frame.index[-1:], dtype=object)
+        .astype(frame.dtypes, errors="ignore")
+        # fmt: on
     )
 
 
@@ -127,7 +129,13 @@ def fillna(
         frame.columns,
         dtype=object,
     )
-    return frame.mask(isna(frame), replacements, axis=1)
+    return (
+        # fmt: off
+        frame
+        .mask(isna(frame), replacements, axis=1)
+        .astype(frame.dtypes, errors="ignore")
+        # fmt: on
+    )
 
 
 def isna(frame: pd.DataFrame, /) -> pd.DataFrame:
