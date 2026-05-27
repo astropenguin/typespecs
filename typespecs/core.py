@@ -14,11 +14,9 @@ from typing import TYPE_CHECKING, Annotated, Any, overload
 
 # dependencies
 import pandas as pd
-from packaging.version import Version
-from pandas import __version__ as PANDAS_VERSION
 from readonlydict import ReadonlyDict, Tuples
 from typing_extensions import Self
-from .frame import coalesce, concat, fillna
+from .frame import Resolution, collapse, concat, fillna, no_silent_downcasting
 from .typing import get_annotation, get_annotations, get_metadata, get_subannotations
 
 
@@ -65,6 +63,7 @@ class Spec(ReadonlyDict[str, Any]):
 def from_annotated(
     obj: Any,
     /,
+    conflict: Mapping[str, Resolution] | Resolution = "override",
     data: str | None = "data",
     default: Mapping[str, Any] | Any = pd.NA,
     depth: int | None = None,
@@ -76,12 +75,21 @@ def from_annotated(
 
     Args:
         obj: The object to convert.
+        conflict: Resolution strategy for conflicts between metadata.
+            Either a single resolution or a mapping of column names
+            to resolutions is accepted. As built-in resolutions,
+            ``"override"`` (new value overrides old value; default behavior)
+            and ``"update"`` (new mapping updates old mapping) are supported.
+            A function that takes old and new values and returns
+            resolved value can also be accepted as a custom resolution.
         data: Name of the column for the actual data of the annotations.
             If it is ``None``, the data column will not be created.
-        depth: Maximum depth of sub-annotations to search.
-            If it is ``None``, all sub-annotations will be searched.
         default: Default value for each column. Either a single value
             or a mapping of column names to values is accepted.
+            If the specified columns are not present in the created specification
+            DataFrame, each column filled with the specified value will be added.
+        depth: Maximum depth of sub-annotations to search.
+            If it is ``None``, all sub-annotations will be searched.
         merge: Whether to merge all sub-annotations into a single row.
             If it is ``False``, each sub-annotation will have its own row.
         separator: Separator for concatenating root and sub-indices.
@@ -102,6 +110,7 @@ def from_annotated(
 
     return from_annotations(
         annotations,
+        conflict=conflict,
         default=default,
         depth=depth,
         merge=merge,
@@ -114,6 +123,7 @@ def from_annotation(
     obj: Any,
     /,
     *,
+    conflict: Mapping[str, Resolution] | Resolution = "override",
     default: Mapping[str, Any] | Any = pd.NA,
     depth: int | None = None,
     index: str = "root",
@@ -125,8 +135,17 @@ def from_annotation(
 
     Args:
         obj: The annotation to convert.
+        conflict: Resolution strategy for conflicts between metadata.
+            Either a single resolution or a mapping of column names
+            to resolutions is accepted. As built-in resolutions,
+            ``"override"`` (new value overrides old value; default behavior)
+            and ``"update"`` (new mapping updates old mapping) are supported.
+            A function that takes old and new values and returns
+            resolved value can also be accepted as a custom resolution.
         default: Default value for each column. Either a single value
             or a mapping of column names to values is accepted.
+            If the specified columns are not present in the created specification
+            DataFrame, each column filled with the specified value will be added.
         depth: Maximum depth of sub-annotations to search.
             If it is ``None``, all sub-annotations will be searched.
         index: Root index of the created specification DataFrame.
@@ -146,44 +165,45 @@ def from_annotation(
         obj = Annotated[obj, Spec({type: ITSELF})]
 
     itself = get_annotation(obj, recursive=True)
-    specs: dict[str, Any] = {}
+    frames: list[pd.DataFrame] = []
+    specs: list[dict[str, Any]] = []
 
     for meta in get_metadata(obj):
         if isinstance(meta, Spec):
-            for key, value in meta.items():
-                specs[key] = itself if value == ITSELF else value
+            specs.append(
+                {
+                    key: itself if value == ITSELF else value
+                    for key, value in meta.items()
+                }
+            )
 
-    frames = [
-        pd.DataFrame(
-            data={key: [value] for key, value in specs.items()},
-            index=[index],
-            dtype=object,
+    if specs:
+        rows = (
+            pd.DataFrame([spec], [str(dummy_index)], dtype=object)
+            for dummy_index, spec in enumerate(specs)
         )
-    ]
+        frames.append(collapse(concat(rows), conflict).set_axis([index]))
+    else:
+        frames.append(from_nothing().set_axis([index]))
 
     if depth is None or depth > 0:
         for subindex, subannotation in enumerate(get_subannotations(obj)):
             frames.append(
                 from_annotation(
                     subannotation,
+                    conflict=conflict,
                     default=pd.NA,
                     depth=None if depth is None else depth - 1,
                     index=f"{index}{separator}{subindex}",
                     merge=False,
                     separator=separator,
                     type=type,
-                )
+                ),
             )
 
-    if Version(PANDAS_VERSION) >= Version("3"):
+    with no_silent_downcasting():
         if merge:
-            return fillna(coalesce(concat(frames)), default)
-        else:
-            return fillna(concat(frames), default)
-
-    with pd.option_context("future.no_silent_downcasting", True):
-        if merge:
-            return fillna(coalesce(concat(frames)), default)
+            return fillna(collapse(concat(frames)[::-1], conflict), default)
         else:
             return fillna(concat(frames), default)
 
@@ -192,6 +212,7 @@ def from_annotations(
     obj: Mapping[str, Any],
     /,
     *,
+    conflict: Mapping[str, Resolution] | Resolution = "override",
     default: Mapping[str, Any] | Any = pd.NA,
     depth: int | None = None,
     merge: bool = True,
@@ -202,8 +223,17 @@ def from_annotations(
 
     Args:
         obj: The annotations to convert.
+        conflict: Resolution strategy for conflicts between metadata.
+            Either a single resolution or a mapping of column names
+            to resolutions is accepted. As built-in resolutions,
+            ``"override"`` (new value overrides old value; default behavior)
+            and ``"update"`` (new mapping updates old mapping) are supported.
+            A function that takes old and new values and returns
+            resolved value can also be accepted as a custom resolution.
         default: Default value for each column. Either a single value
             or a mapping of column names to values is accepted.
+            If the specified columns are not present in the created specification
+            DataFrame, each column filled with the specified value will be added.
         depth: Maximum depth of sub-annotations to search.
             If it is ``None``, all sub-annotations will be searched.
         merge: Whether to merge all sub-annotations into a single row.
@@ -221,6 +251,7 @@ def from_annotations(
         frames.append(
             from_annotation(
                 annotation,
+                conflict=conflict,
                 default=pd.NA,
                 depth=depth,
                 index=index,
@@ -230,11 +261,8 @@ def from_annotations(
             )
         )
 
-    if Version(PANDAS_VERSION) >= Version("3"):
-        return fillna(concat(frames), default)
-
-    with pd.option_context("future.no_silent_downcasting", True):
-        return fillna(concat(frames), default)
+    with no_silent_downcasting():
+        return fillna(concat(frames), default) if frames else from_nothing()
 
 
 def from_ellipsis(
@@ -258,6 +286,20 @@ def from_ellipsis(
         It will be removed if they are no longer supported in the package.
     """
     if type is None:
-        return pd.DataFrame(index=[index], dtype=object)
+        return from_nothing().set_axis([index])
     else:
         return pd.DataFrame(data={type: ...}, index=[index], dtype=object)
+
+
+def from_nothing() -> pd.DataFrame:
+    """Create an empty specification DataFrame from nothing.
+
+    Returns:
+        Created specification DataFrame.
+    """
+    return pd.DataFrame(
+        None,
+        pd.Index([], dtype=str),
+        pd.Index([], dtype=str),
+        dtype=object,
+    )
