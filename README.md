@@ -201,6 +201,32 @@ temp  {'sensor': 'B', 'status': 'active'}  [273.15, 280.15]  list[float]
 wind  {'sensor': 'B', 'status': 'active'}       [5.0, 10.0]  list[float]
 ```
 
+### Handling Configuration Settings
+
+You can define configuration settings directly on an object (or class) to take precedence over the behavior of `from_annotated`.
+This is particularly useful when using wrapper libraries where you cannot pass parameters to `from_annotated` directly.
+To do this, add the `__typespecs_config__` attribute and assign a dictionary of your settings.
+You can optionally type-hint it with [`typespecs.Config`](https://astropenguin.github.io/typespecs/_apidoc/typespecs.html#typespecs.Config) to benefit from static type checking.
+
+```python
+@dataclass
+class Weather:
+    __typespecs_config__: ClassVar[ts.Config] = {"conflict": {"attrs": "update"}}
+
+    temp: Ann[Temp, ts.Spec(attrs={"sensor": "B"})]
+    wind: Ann[Wind, ts.Spec(attrs={"sensor": "B"})]
+
+
+weather = Weather([273.15, 280.15], [5.0, 10.0])
+specs = ts.from_annotated(weather)
+print(specs)
+```
+```
+                                    attrs              data         type
+temp  {'sensor': 'B', 'status': 'active'}  [273.15, 280.15]  list[float]
+wind  {'sensor': 'B', 'status': 'active'}       [5.0, 10.0]  list[float]
+```
+
 ### Handling Type Hint(s) Directly
 
 You can create a specification DataFrame from type hint(s) using [`typespecs.from_annotation`](https://astropenguin.github.io/typespecs/_apidoc/typespecs.html#typespecs.from_annotation) and [`typespecs.from_annotations`](https://astropenguin.github.io/typespecs/_apidoc/typespecs.html#typespecs.from_annotations).
@@ -228,34 +254,4 @@ print(specs)
 ```
       category            dtype         name         type  units
 root      data  <class 'float'>  Temperature  list[float]      K
-```
-
-### Configuration for Typespecs
-
-You can define configuration settings directly on an object (or class) to take precedence over the behavior of `from_annotated`.
-This is particularly useful when using wrapper libraries where you cannot pass parameters to `from_annotated` directly.
-To do this, add the `__typespecs_config__` attribute and assign a dictionary of your settings.
-You can optionally type-hint it with [`typespecs.Config`](https://astropenguin.github.io/typespecs/_apidoc/typespecs.html#typespecs.Config) to benefit from static type checking.
-
-```python
-Temp = Ann[list[float], ts.Spec(attrs={"sensor": "A", "status": "active"})]
-Wind = Ann[list[float], ts.Spec(attrs={"sensor": "A", "status": "active"})]
-
-
-@dataclass
-class Weather:
-    __typespecs_config__: ClassVar[ts.Config] = {"conflict": {"attrs": "update"}}
-
-    temp: Ann[Temp, ts.Spec(attrs={"sensor": "B"})]
-    wind: Ann[Wind, ts.Spec(attrs={"sensor": "B"})]
-
-
-weather = Weather([273.15, 280.15], [5.0, 10.0])
-specs = ts.from_annotated(weather)
-print(specs)
-```
-```
-                                    attrs              data         type
-temp  {'sensor': 'B', 'status': 'active'}  [273.15, 280.15]  list[float]
-wind  {'sensor': 'B', 'status': 'active'}       [5.0, 10.0]  list[float]
 ```
