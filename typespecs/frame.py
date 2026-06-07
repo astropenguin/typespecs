@@ -1,6 +1,7 @@
 __all__ = ["collapse", "concat", "fillna", "isna", "no_silent_downcasting"]
 
 # standard library
+from collections import defaultdict
 from collections.abc import Callable, Iterable, Mapping
 from contextlib import AbstractContextManager, nullcontext
 from functools import reduce
@@ -81,19 +82,28 @@ def concat(frames: Iterable[pd.DataFrame], /) -> pd.DataFrame:
 
     Returns:
         Concatenated DataFrame.
+
+    Note:
+        For pandas < 3, the dtypes of the concatenated DataFrame
+        are always ``object`` to avoid silent downcasting.
     """
     frames = list(frames)
-    concat = pd.DataFrame(
-        pd.NA,
-        [idx for frame in frames for idx in frame.index],
-        sorted({col for frame in frames for col in frame.columns}),
-        dtype=object,
-    )
+    na = {col: pd.NA for frame in frames for col in frame.columns}
+    filled_frames = [fillna(frame, na) for frame in frames]
 
-    for frame in frames:
-        concat.loc[frame.index, frame.columns] = frame
+    if Version(PANDAS_VERSION) >= Version("3"):
+        return pd.concat(filled_frames).sort_index(axis=1)
+    else:
+        data: dict[str, list[Any]] = defaultdict(list)
+        index: list[Any] = []
 
-    return concat
+        for frame in filled_frames:
+            index.extend(frame.index)
+
+            for col in frame.columns:
+                data[col].extend(frame[col])
+
+        return pd.DataFrame(data, index, dtype=object).sort_index(axis=1)
 
 
 def fillna(

@@ -10,6 +10,7 @@ __all__ = [
 # standard library
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from itertools import repeat
 from typing import TYPE_CHECKING, Annotated, Any, overload
 
 # dependencies
@@ -158,37 +159,33 @@ def from_annotation(
     Returns:
         Created specification DataFrame.
     """
-    if obj is Ellipsis:
-        return from_ellipsis(index=index, type=type)
+    with no_silent_downcasting():
+        if obj is Ellipsis:
+            # workaround for Python 3.10 and 3.11
+            return new(None if type is None else {type: Ellipsis}, index)
 
-    if type is not None:
-        obj = Annotated[obj, Spec({type: ITSELF})]
+        annotation = get_annotation(obj, recursive=True)
 
-    itself = get_annotation(obj, recursive=True)
-    frames: list[pd.DataFrame] = []
-    specs: list[dict[str, Any]] = []
+        if type is not None:
+            obj = Annotated[obj, Spec({type: ITSELF})]
 
-    for meta in get_metadata(obj):
-        if isinstance(meta, Spec):
-            specs.append(
-                {
-                    key: itself if value == ITSELF else value
-                    for key, value in meta.items()
-                }
-            )
+        specs = [
+            {key: annotation if val == ITSELF else val for key, val in spec.items()}
+            for spec in get_metadata(obj, type=Spec)
+        ]
 
-    if specs:
-        rows = (
-            pd.DataFrame([spec], [str(dummy_index)], dtype=object)
-            for dummy_index, spec in enumerate(specs)
-        )
-        frames.append(collapse(concat(rows), conflict).set_axis([index]))
-    else:
-        frames.append(from_nothing().set_axis([index]))
+        if specs:
+            root = collapse(concat(map(new, specs, repeat(index))), conflict)
+        else:
+            root = new(None, index)
 
-    if depth is None or depth > 0:
+        if depth == 0:
+            return fillna(root, default)
+
+        sub: list[pd.DataFrame] = []
+
         for subindex, subannotation in enumerate(get_subannotations(obj)):
-            frames.append(
+            sub.append(
                 from_annotation(
                     subannotation,
                     conflict=conflict,
@@ -201,11 +198,10 @@ def from_annotation(
                 ),
             )
 
-    with no_silent_downcasting():
         if merge:
-            return fillna(collapse(concat(frames)[::-1], conflict), default)
+            return fillna(collapse(concat([*sub, root]), conflict), default)
         else:
-            return fillna(concat(frames), default)
+            return fillna(concat([root, *sub]), default)
 
 
 def from_annotations(
@@ -245,61 +241,45 @@ def from_annotations(
     Returns:
         Created specification DataFrame.
     """
-    frames: list[pd.DataFrame] = []
-
-    for index, annotation in obj.items():
-        frames.append(
-            from_annotation(
-                annotation,
-                conflict=conflict,
-                default=pd.NA,
-                depth=depth,
-                index=index,
-                merge=merge,
-                separator=separator,
-                type=type,
-            )
-        )
-
     with no_silent_downcasting():
-        return fillna(concat(frames), default) if frames else from_nothing()
+        frames: list[pd.DataFrame] = []
+
+        for index, annotation in obj.items():
+            frames.append(
+                from_annotation(
+                    annotation,
+                    conflict=conflict,
+                    default=pd.NA,
+                    depth=depth,
+                    index=index,
+                    merge=merge,
+                    separator=separator,
+                    type=type,
+                )
+            )
+
+        if frames:
+            return fillna(concat(frames), default)
+        else:
+            return new(None, None)
 
 
-def from_ellipsis(
-    *,
-    index: str = "root",
-    type: str | None = "type",
+def new(
+    data: Mapping[str, Any] | None = None,
+    index: Iterable[str] | None = None,
+    /,
 ) -> pd.DataFrame:
-    """Create a specification DataFrame from an Ellipsis.
-
-    Args:
-        index: Root index of the created specification DataFrame.
-        type: Name of the column for the metadata-stripped annotations.
-            If it is ``None``, the type column will not be created.
-
-    Returns:
-        Created specification DataFrame.
-
-    Note:
-        This function is only for supporting Python 3.10 and 3.11
-        where ``Annotated[Ellipsis, ...]`` does not work properly.
-        It will be removed if they are no longer supported in the package.
-    """
-    if type is None:
-        return from_nothing().set_axis([index])
+    """Create a new single-row specification DataFrame."""
+    if data is None:
+        return pd.DataFrame(
+            None,
+            None if index is None else [index],
+            pd.Index([], dtype=str),
+            dtype=object,
+        )
     else:
-        return pd.DataFrame(data={type: ...}, index=[index], dtype=object)
-
-
-def from_nothing() -> pd.DataFrame:
-    """Create an empty specification DataFrame from nothing.
-
-    Returns:
-        Created specification DataFrame.
-    """
-    return pd.DataFrame(
-        None,
-        pd.Index([], dtype=str),
-        pd.Index([], dtype=str),
-        dtype=object,
-    )
+        return pd.DataFrame(
+            [data],
+            None if index is None else [index],
+            dtype=object,
+        )

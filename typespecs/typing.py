@@ -8,7 +8,7 @@ __all__ = [
 ]
 
 # standard library
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, TypeVar, overload
 from typing import _strip_annotations  # type: ignore
 
 # dependencies
@@ -17,6 +17,9 @@ from typing_extensions import (
     get_args,
     get_origin,
 )
+
+# type hints
+T = TypeVar("T")
 
 
 def get_annotation(obj: Any, /, *, recursive: bool = False) -> Any:
@@ -53,7 +56,11 @@ def get_annotations(obj: Any, /) -> dict[str, Any]:
         return _get_annotations(type(obj))
 
 
-def get_metadata(obj: Any, /) -> list[Any]:
+@overload
+def get_metadata(obj: Any, /, *, type: None = None) -> list[Any]: ...
+@overload
+def get_metadata(obj: Any, /, *, type: type[T]) -> list[T]: ...
+def get_metadata(obj: Any, /, *, type: Any = None) -> Any:
     """Return all metadata of given object.
 
     Args:
@@ -62,7 +69,12 @@ def get_metadata(obj: Any, /) -> list[Any]:
     Returns:
         List of all metadata of the object.
     """
-    return list(get_args(obj)[1:]) if has_metadata(obj) else []
+    metadata = get_args(obj)[1:] if has_metadata(obj) else ()
+
+    if type is None:
+        return list(metadata)
+    else:
+        return [item for item in metadata if isinstance(item, type)]
 
 
 def get_subannotations(obj: Any, /) -> list[Any]:
