@@ -5,6 +5,7 @@ __all__ = [
     "typing",
     # aliases
     "ITSELF",
+    "Config",
     "ItselfType",
     "Spec",
     "from_annotated",
