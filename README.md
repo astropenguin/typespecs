@@ -232,10 +232,10 @@ root      data  <class 'float'>  Temperature  list[float]      K
 
 ### Configuration for Typespecs
 
-You can define configuration settings directly on an object (or class) to customize the behavior of the `typespecs.from_annotated` function.
+You can define configuration settings directly on an object (or class) to take precedence over the behavior of `from_annotated`.
 This is particularly useful when using wrapper libraries where you cannot pass parameters to `from_annotated` directly.
-To do this, add the `__typespecs__` attribute and assign a  [`typespecs.Config`](https://astropenguin.github.io/typespecs/_apidoc/typespecs.html#typespecs.Config) dictionary.
-Note that the settings provided via it take precedence over the default parameters passed to the `from_annotated` function.
+To do this, add the `__typespecs_config__` attribute and assign a dictionary of your settings.
+You can optionally type-hint it with [`typespecs.Config`](https://astropenguin.github.io/typespecs/_apidoc/typespecs.html#typespecs.Config) to benefit from static type checking.
 
 ```python
 Temp = Ann[list[float], ts.Spec(attrs={"sensor": "A", "status": "active"})]
@@ -244,7 +244,7 @@ Wind = Ann[list[float], ts.Spec(attrs={"sensor": "A", "status": "active"})]
 
 @dataclass
 class Weather:
-    __typespecs__: ClassVar[ts.Config] = {"conflict": {"attrs": "update"}}
+    __typespecs_config__: ClassVar[ts.Config] = {"conflict": {"attrs": "update"}}
 
     temp: Ann[Temp, ts.Spec(attrs={"sensor": "B"})]
     wind: Ann[Wind, ts.Spec(attrs={"sensor": "B"})]

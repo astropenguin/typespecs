@@ -26,8 +26,8 @@ class Config(TypedDict):
     """Configuration for typespecs.
 
     This dictionary defines the configuration settings that can be provided
-    via the ``__typespecs__`` attribute of an object to take precedence
-    over the default behavior of the ``typespecs.from_annotated`` function.
+    via the ``__typespecs_config__`` attribute of an object to take precedence
+    over the default behavior of ``typespecs.from_annotated``.
     """
 
     conflict: NotRequired[Mapping[str, Resolution] | Resolution]
@@ -151,11 +151,11 @@ def from_annotated(
         Created specification DataFrame.
 
     Note:
-        If the given object has a ``__typespecs__`` attribute, the configuration
-        settings defined in it will take precedence over the arguments passed
-        to this function.
+        If the given object has a ``__typespecs_config__`` attribute,
+        the configuration settings defined in it will take precedence
+        over the arguments passed to this function.
     """
-    config = getattr(obj, "__typespecs__", {})
+    config = getattr(obj, "__typespecs_config__", {})
     conflict = config.get("conflict", conflict)
     data = config.get("data", data)
     default = config.get("default", default)
@@ -173,7 +173,7 @@ def from_annotated(
             spec = Spec({data: getattr(obj, index, pd.NA)})
             annotations[index] = Annotated[annotation, spec]
 
-    annotations.pop("__typespecs__", None)
+    annotations.pop("__typespecs_config__", None)
 
     return from_annotations(
         annotations,
