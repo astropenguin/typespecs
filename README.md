@@ -27,6 +27,7 @@ You can create and attach a type specification, [`typespecs.Spec(key=value, ...)
 The `Spec` object acts as a read-only dictionary, ensuring your metadata remains immutable and safe from runtime modifications.
 Once your data structure is defined, use [`typespecs.from_annotated(obj)`](https://astropenguin.github.io/typespecs/_apidoc/typespecs.html#typespecs.from_annotated) to extract and aggregate the attached metadata into a specification DataFrame.
 By default, the actual data and the metadata-stripped type hints will also be stored in the `data` and `type` columns, respectively (you can control this behavior using the `data` and `type` parameters in `from_annotated`).
+
 ```python
 import typespecs as ts
 from dataclasses import dataclass
@@ -52,7 +53,8 @@ loc       info             Tokyo  Observed location  <class 'str'>   <NA>
 ```
 
 You can attach multiple `Spec` objects to a single type hint.
-If metadata overlaps between them, the last one will take precedence.
+If metadata conflicts between them, the last one will take precedence (you can control this behavior using the `conflict` parameters in `from_annotated`; see also [Handling Metadata Conflicts](#handling-metadata-conflicts)).
+
 ```python
 Temp = Ann[list[float], ts.Spec(category="data", name="Temperature")]
 Wind = Ann[list[float], ts.Spec(category="data", name="Wind speed")]
@@ -83,6 +85,7 @@ loc       info             Tokyo         City  <class 'str'>   <NA>
 
 Typespecs simplifies working with nested types.
 By default, the metadata attached to nested types will be merged into a single parent row.
+
 ```python
 Float = Ann[float, ts.Spec(dtype="f8")]
 
@@ -106,6 +109,7 @@ loc       info             Tokyo   <NA>  Observed location  <class 'str'>   <NA>
 ```
 
 You can disable this merging behavior using `merge=False` in `from_annotated`.
+
 ```python
 specs = ts.from_annotated(weather, merge=False)
 print(specs)
@@ -121,6 +125,7 @@ loc         info             Tokyo   <NA>  Observed location    <class 'str'>   
 
 Finally, you can include the nested type itself as part of the metadata using the special `typespecs.ITSELF` object.
 This is useful when you want to handle the inner type alongside other metadata within the specification DataFrame.
+
 ```python
 Dtype = Ann[TypeVar("T"), ts.Spec(dtype=ts.ITSELF)]
 
@@ -146,7 +151,7 @@ loc       info             Tokyo             <NA>  Observed location  <class 'st
 ### Handling Missing Values
 
 By default, missing metadata is filled with `pandas.NA` in a specification DataFrame.
-You can specify custom fallback values by using the `default` parameter in `from_annotated`.
+You can pass custom fallback values by using the `default` parameter in `from_annotated`.
 
 ```python
 specs = ts.from_annotated(weather, default={"dtype": None, "units": "1"})
@@ -159,10 +164,48 @@ wind      data       [5.0, 10.0]  <class 'float'>         Wind speed    list[flo
 loc       info             Tokyo             None  Observed location  <class 'str'>      1
 ```
 
+### Handling Metadata Conflicts
+
+When multiple `Spec` objects define the same key (either stacked on a single type hint or across nested types), the default behavior is to override the older value with the newer one.
+You can customize this conflict resolution strategy using the `conflict` parameter in `from_annotated`.
+For example, passing `"update"` instead of `"override"` allows you to cleanly merge dictionary-like metadata.
+You can also pass a custom callable to handle more complex conflict resolutions.
+
+```python
+Temp = Ann[list[float], ts.Spec(attrs={"sensor": "A", "status": "active"})]
+Wind = Ann[list[float], ts.Spec(attrs={"sensor": "A", "status": "active"})]
+
+
+@dataclass
+class Weather:
+    temp: Ann[Temp, ts.Spec(attrs={"sensor": "B"})]
+    wind: Ann[Wind, ts.Spec(attrs={"sensor": "B"})]
+
+
+weather = Weather([273.15, 280.15], [5.0, 10.0])
+specs = ts.from_annotated(weather)
+print(specs)
+```
+```
+                attrs              data         type
+temp  {'sensor': 'B'}  [273.15, 280.15]  list[float]
+wind  {'sensor': 'B'}       [5.0, 10.0]  list[float]
+```
+```python
+specs = ts.from_annotated(weather, conflict={"attrs": "update"})
+print(specs)
+```
+```
+                                    attrs              data         type
+temp  {'sensor': 'B', 'status': 'active'}  [273.15, 280.15]  list[float]
+wind  {'sensor': 'B', 'status': 'active'}       [5.0, 10.0]  list[float]
+```
+
 ### Handling Type Hint(s) Directly
 
 You can create a specification DataFrame from type hint(s) using [`typespecs.from_annotation`](https://astropenguin.github.io/typespecs/_apidoc/typespecs.html#typespecs.from_annotation) and [`typespecs.from_annotations`](https://astropenguin.github.io/typespecs/_apidoc/typespecs.html#typespecs.from_annotations).
 This is useful when you want to directly handle type hints without defining them within a data structure.
+
 ```python
 annotations = {
       "temp": Ann[list[Dtype[float]], ts.Spec(category="data", name="Temperature", units="K")],
