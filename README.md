@@ -31,7 +31,7 @@ By default, the actual data and the metadata-stripped type hints will also be st
 ```python
 import typespecs as ts
 from dataclasses import dataclass
-from typing import Annotated as Ann, TypeVar
+from typing import Annotated as Ann, ClassVar, TypeVar
 
 
 @dataclass
@@ -193,6 +193,32 @@ wind  {'sensor': 'B'}       [5.0, 10.0]  list[float]
 ```
 ```python
 specs = ts.from_annotated(weather, conflict={"attrs": "update"})
+print(specs)
+```
+```
+                                    attrs              data         type
+temp  {'sensor': 'B', 'status': 'active'}  [273.15, 280.15]  list[float]
+wind  {'sensor': 'B', 'status': 'active'}       [5.0, 10.0]  list[float]
+```
+
+### Handling Configuration Settings
+
+You can define configuration settings directly on an object (or class) to take precedence over the behavior of `from_annotated`.
+This is particularly useful when using wrapper libraries where you cannot pass parameters to `from_annotated` directly.
+To do this, add the `__typespecs_config__` attribute and assign a dictionary of your settings.
+You can optionally type-hint it with [`typespecs.Config`](https://astropenguin.github.io/typespecs/_apidoc/typespecs.html#typespecs.Config) to benefit from static type checking.
+
+```python
+@dataclass
+class Weather:
+    __typespecs_config__: ClassVar[ts.Config] = {"conflict": {"attrs": "update"}}
+
+    temp: Ann[Temp, ts.Spec(attrs={"sensor": "B"})]
+    wind: Ann[Wind, ts.Spec(attrs={"sensor": "B"})]
+
+
+weather = Weather([273.15, 280.15], [5.0, 10.0])
+specs = ts.from_annotated(weather)
 print(specs)
 ```
 ```
