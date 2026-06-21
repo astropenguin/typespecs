@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Annotated, Any, overload
 
 # dependencies
 import pandas as pd
-from readonlydict import ReadonlyDict, Tuples
+from readonlydict import Items, ReadonlyDict
 from typing_extensions import NotRequired, Self, TypedDict
 from .frame import Resolution, collapse, concat, fillna, no_silent_downcasting
 from .typing import get_annotation, get_annotations, get_metadata, get_subannotations
@@ -97,9 +97,9 @@ class Spec(ReadonlyDict[str, Any]):
         @overload
         def __new__(cls, **kwargs: Any) -> Self: ...
         @overload
-        def __new__(cls, mapping: Mapping[str, Any], /, **kwargs: Any) -> Self: ...
+        def __new__(cls, iterable: Items[str, Any], /, **kwargs: Any) -> Self: ...
         @overload
-        def __new__(cls, iterable: Tuples[str, Any], /, **kwargs: Any) -> Self: ...
+        def __new__(cls, mapping: Mapping[str, Any], /, **kwargs: Any) -> Self: ...
 
         @overload
         @classmethod
