@@ -19,7 +19,7 @@ import pandas as pd
 from readonlydict import Items, ReadonlyDict
 from typing_extensions import NotRequired, Self, TypedDict
 from .frame import Resolution, collapse, concat, fillna, no_silent_downcasting
-from .typing import get_annotation, get_annotations, get_metadata, get_subannotations
+from .typing import del_metadata, get_annotations, get_metadata, get_subannotations
 
 
 class Config(TypedDict):
@@ -230,7 +230,7 @@ def from_annotation(
             # workaround for Python 3.10 and 3.11
             return new(None if type is None else {type: Ellipsis}, index)
 
-        annotation = get_annotation(obj, recursive=True)
+        annotation = del_metadata(obj, recursive=True)
 
         if type is not None:
             obj = Annotated[obj, Spec({type: ITSELF})]

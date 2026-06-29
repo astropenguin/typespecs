@@ -3,7 +3,7 @@ from typing import Annotated, Literal, TypedDict
 
 # dependencies
 from typespecs.typing import (
-    get_annotation,
+    del_metadata,
     get_annotations,
     get_metadata,
     get_subannotations,
@@ -12,12 +12,12 @@ from typespecs.typing import (
 )
 
 
-def test_get_annotation() -> None:
-    assert get_annotation(int) == int
-    assert get_annotation(Annotated[int, 0]) == int
-    assert get_annotation(Annotated[int, 0], recursive=True) == int
-    assert get_annotation(list[Annotated[int, 0]]) == list[Annotated[int, 0]]
-    assert get_annotation(list[Annotated[int, 0]], recursive=True) == list[int]
+def test_del_metadata() -> None:
+    assert del_metadata(int) == int
+    assert del_metadata(Annotated[int, 0]) == int
+    assert del_metadata(Annotated[int, 0], recursive=True) == int
+    assert del_metadata(list[Annotated[int, 0]]) == list[Annotated[int, 0]]
+    assert del_metadata(list[Annotated[int, 0]], recursive=True) == list[int]
 
 
 def test_get_annotations() -> None:
