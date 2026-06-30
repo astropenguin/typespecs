@@ -225,49 +225,48 @@ def from_annotation(
     Returns:
         Created specification DataFrame.
     """
-    with no_silent_downcasting():
-        if obj is Ellipsis:
-            # workaround for Python 3.10 and 3.11
-            return new(None if type is None else {type: Ellipsis}, index)
+    if obj is Ellipsis:
+        # workaround for Python 3.10 and 3.11
+        return new(None if type is None else {type: Ellipsis}, index)
 
-        annotation = del_metadata(obj, recursive=True)
+    annotation = del_metadata(obj, recursive=True)
 
-        if type is not None:
-            obj = Annotated[obj, Spec({type: ITSELF})]
+    if type is not None:
+        obj = Annotated[obj, Spec({type: ITSELF})]
 
-        specs = [
-            {key: annotation if val == ITSELF else val for key, val in spec.items()}
-            for spec in get_metadata(obj, type=Spec)
-        ]
+    specs = [
+        {key: annotation if val == ITSELF else val for key, val in spec.items()}
+        for spec in get_metadata(obj, type=Spec)
+    ]
 
-        if specs:
-            root = collapse(concat(map(new, specs, repeat(index))), conflict)
-        else:
-            root = new(None, index)
+    if specs:
+        root = collapse(concat(map(new, specs, repeat(index))), conflict)
+    else:
+        root = new(None, index)
 
-        if depth == 0:
-            return fillna(root, default)
+    if depth == 0:
+        return fillna(root, default)
 
-        sub: list[pd.DataFrame] = []
+    sub: list[pd.DataFrame] = []
 
-        for subindex, subannotation in enumerate(get_subannotations(obj)):
-            sub.append(
-                from_annotation(
-                    subannotation,
-                    conflict=conflict,
-                    default=pd.NA,
-                    depth=None if depth is None else depth - 1,
-                    index=f"{index}{separator}{subindex}",
-                    merge=False,
-                    separator=separator,
-                    type=type,
-                ),
-            )
+    for subindex, subannotation in enumerate(get_subannotations(obj)):
+        sub.append(
+            from_annotation(
+                subannotation,
+                conflict=conflict,
+                default=pd.NA,
+                depth=None if depth is None else depth - 1,
+                index=f"{index}{separator}{subindex}",
+                merge=False,
+                separator=separator,
+                type=type,
+            ),
+        )
 
-        if merge:
-            return fillna(collapse(concat([*sub, root]), conflict), default)
-        else:
-            return fillna(concat([root, *sub]), default)
+    if merge:
+        return fillna(collapse(concat([*sub, root]), conflict), default)
+    else:
+        return fillna(concat([root, *sub]), default)
 
 
 def from_annotations(
@@ -307,27 +306,26 @@ def from_annotations(
     Returns:
         Created specification DataFrame.
     """
-    with no_silent_downcasting():
-        frames: list[pd.DataFrame] = []
+    frames: list[pd.DataFrame] = []
 
-        for index, annotation in obj.items():
-            frames.append(
-                from_annotation(
-                    annotation,
-                    conflict=conflict,
-                    default=pd.NA,
-                    depth=depth,
-                    index=index,
-                    merge=merge,
-                    separator=separator,
-                    type=type,
-                )
+    for index, annotation in obj.items():
+        frames.append(
+            from_annotation(
+                annotation,
+                conflict=conflict,
+                default=pd.NA,
+                depth=depth,
+                index=index,
+                merge=merge,
+                separator=separator,
+                type=type,
             )
+        )
 
-        if frames:
-            return fillna(concat(frames), default)
-        else:
-            return new(None, None)
+    if frames:
+        return fillna(concat(frames), default)
+    else:
+        return new(None, None)
 
 
 def new(
