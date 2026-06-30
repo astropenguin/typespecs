@@ -1,11 +1,18 @@
-__all__ = ["collapse", "concat", "fillna", "isna", "no_silent_downcasting"]
+__all__ = [
+    "collapse",
+    "concat",
+    "fillna",
+    "isna",
+    "no_silent_downcasting",
+    "replace",
+]
 
 # standard library
-from collections import defaultdict
 from collections.abc import Callable, Iterable, Mapping
 from contextlib import AbstractContextManager, nullcontext
 from functools import reduce
 from typing import Any, Literal
+from warnings import warn
 
 # dependencies
 import pandas as pd
@@ -51,8 +58,8 @@ def collapse(
 
     if isinstance(conflict, Mapping):
         conflicts = {
-            col: builtins.get(resolution, resolution)
-            for col, resolution in conflict.items()  # type: ignore
+            column: builtins.get(resolution, resolution)
+            for column, resolution in conflict.items()  # type: ignore
         }
     else:
         conflicts = dict.fromkeys(
@@ -61,10 +68,8 @@ def collapse(
         )
 
     reduced = {
-        # fmt: off
-        col: reduce(conflicts.get(col, override), frame[col])
-        for col in frame.columns
-        # fmt: on
+        column: reduce(conflicts.get(column, override), frame[column])
+        for column in frame.columns
     }
     return (
         # fmt: off
@@ -82,28 +87,27 @@ def concat(frames: Iterable[pd.DataFrame], /) -> pd.DataFrame:
 
     Returns:
         Concatenated DataFrame.
-
-    Note:
-        For pandas < 3, the dtypes of the concatenated DataFrame
-        are always ``object`` to avoid silent downcasting.
     """
     frames = list(frames)
-    na = {col: pd.NA for frame in frames for col in frame.columns}
-    filled_frames = [fillna(frame, na) for frame in frames]
+    values = {column: pd.NA for frame in frames for column in frame.columns}
+    filled = (fillna(frame, values) for frame in frames)
 
     if Version(PANDAS_VERSION) >= Version("3"):
-        return pd.concat(filled_frames).sort_index(axis=1)
+        return pd.concat(filled).sort_index(axis=1)
     else:
-        data: dict[str, list[Any]] = defaultdict(list)
-        index: list[Any] = []
-
-        for frame in filled_frames:
-            index.extend(frame.index)
-
-            for col in frame.columns:
-                data[col].extend(frame[col])
-
-        return pd.DataFrame(data, index, dtype=object).sort_index(axis=1)
+        dummy = object()
+        concat = pd.concat(
+            # fmt: off
+            replace(frame, pd.NA, dummy, on=object)
+            for frame in filled
+            # fmt: on
+        )
+        return (
+            # fmt: off
+            replace(concat, dummy, pd.NA, on=object)
+            .sort_index(axis=1)
+            # fmt: on
+        )
 
 
 def fillna(
@@ -111,7 +115,7 @@ def fillna(
     value: Mapping[str, Any] | Any = pd.NA,
     /,
 ) -> pd.DataFrame:
-    """Fill missing values (``<NA>`` only) in given DataFrame with given value.
+    """Fill pandas ``<NA>`` in given DataFrame with given value.
 
     Args:
         frame: DataFrame to fill.
@@ -121,31 +125,23 @@ def fillna(
             each column filled with the specified value will be added.
 
     Returns:
-        DataFrame with missing values (``<NA>`` only) filled.
+        Filled DataFrame.
     """
     frame = frame.copy()
-    values: dict[str, Any]
+    dtypes = frame.dtypes.copy()
 
     if isinstance(value, Mapping):
         values = dict(value)  # type: ignore
     else:
         values = dict.fromkeys(frame.columns, value)
 
-    for col in set(values) - set(frame.columns):
-        frame[col] = pd.Series(pd.NA, frame.index, dtype=object)
+    frame[list(set(values) - set(frame.columns))] = pd.NA
 
-    replacements = pd.Series(
-        [values.get(col, pd.NA) for col in frame.columns],
-        frame.columns,
-        dtype=object,
-    )
-    return (
-        # fmt: off
-        frame
-        .mask(isna(frame), replacements, axis=1)
-        .astype(frame.dtypes, errors="ignore")
-        # fmt: on
-    )
+    for column, value in values.items():
+        if any(row := [obj is pd.NA for obj in frame[column]]):
+            frame.loc[row, column] = value
+
+    return frame.astype(dtypes, errors="ignore")
 
 
 def isna(frame: pd.DataFrame, /) -> pd.DataFrame:
@@ -157,15 +153,54 @@ def isna(frame: pd.DataFrame, /) -> pd.DataFrame:
     Returns:
         Boolean DataFrame indicating missing values (``<NA>`` only).
     """
-    if Version(PANDAS_VERSION) >= Version("2.1"):
-        return frame.map(lambda obj: obj is pd.NA)  # type: ignore
-    else:
-        return frame.applymap(lambda obj: obj is pd.NA)  # type: ignore
+    warn(
+        "This function will be deprecated in the next major version."
+        "Use ``map(frame, lambda obj: obj is pandas.NA)`` instead.",
+        DeprecationWarning,
+    )
+    return frame.map(lambda obj: obj is pd.NA)  # type: ignore
 
 
 def no_silent_downcasting() -> AbstractContextManager[None]:
     """Context manager to avoid silent downcasting for pandas < 3."""
+    warn(
+        "This function will be deprecated in the next major version.",
+        DeprecationWarning,
+    )
     if Version(PANDAS_VERSION) >= Version("3"):
         return nullcontext()
     else:
         return pd.option_context("future.no_silent_downcasting", True)
+
+
+def replace(
+    frame: pd.DataFrame,
+    old: Any,
+    new: Any,
+    /,
+    on: Any | None = None,
+) -> pd.DataFrame:
+    """Replace old value with new value in given DataFrame.
+
+    Args:
+        frame: DataFrame to replace.
+        old: Old value to replace.
+        new: New value to replace with.
+        on: Optional data type to restrict replacement on.
+
+    Returns:
+        Replaced DataFrame.
+    """
+    frame = frame.copy()
+    dtypes = frame.dtypes.copy()
+
+    for column in frame.columns:
+        if on is None or frame[column].dtype == on:
+            if old is pd.NA:
+                if any(row := [obj is pd.NA for obj in frame[column]]):
+                    frame.loc[row, column] = new
+            else:
+                if any(row := [obj == old for obj in frame[column]]):
+                    frame.loc[row, column] = new
+
+    return frame.astype(dtypes, errors="ignore")

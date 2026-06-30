@@ -1,4 +1,5 @@
 __all__ = [
+    "del_metadata",
     "get_annotation",
     "get_annotations",
     "get_metadata",
@@ -10,6 +11,7 @@ __all__ = [
 # standard library
 from typing import Annotated, Any, Literal, TypeVar, overload
 from typing import _strip_annotations  # type: ignore
+from warnings import warn
 
 # dependencies
 from typing_extensions import (
@@ -22,54 +24,77 @@ from typing_extensions import (
 T = TypeVar("T")
 
 
-def get_annotation(obj: Any, /, *, recursive: bool = False) -> Any:
-    """Return metadata-stripped annotation of given object.
+def del_metadata(annotation: Any, /, *, recursive: bool = False) -> Any:
+    """Return metadata-stripped annotation.
 
     Args:
-        obj: Object to inspect.
-        recursive: Whether to recursively strip all metadata.
+        annotation: Annotation to strip metadata from.
+        recursive: Whether to recursively strip metadata of sub-annotations.
 
     Returns:
-        Metadata-stripped annotation of the object.
+        Metadata-stripped annotation.
     """
     if recursive:
-        return _strip_annotations(obj)  # type: ignore
+        return _strip_annotations(annotation)  # type: ignore
+    elif has_metadata(annotation):
+        return get_args(annotation)[0]
     else:
-        return get_args(obj)[0] if has_metadata(obj) else obj
+        return annotation
 
 
-def get_annotations(obj: Any, /) -> dict[str, Any]:
-    """Return all annotations of given object.
+def get_annotation(annotation: Any, /, *, recursive: bool = False) -> Any:
+    """Return metadata-stripped annotation.
 
-    If the object is an instance, this function retrieves
+    Args:
+        annotation: Annotation to strip metadata from.
+        recursive: Whether to recursively strip metadata of sub-annotations.
+
+    Returns:
+        Metadata-stripped annotation.
+    """
+    warn(
+        "This function will be deprecated in the next major version."
+        "Use ``del_metadata(annotation, recursive=recursive)`` instead.",
+        DeprecationWarning,
+    )
+    return del_metadata(annotation, recursive=recursive)
+
+
+def get_annotations(cls_or_obj: Any, /) -> dict[str, Any]:
+    """Return annotations of given class or object.
+
+    If it is a class instance, this function tries to retrieve
     the annotations from its class rather than the instance itself.
 
     Args:
-        obj: Object to inspect.
+        cls_or_obj: Class or object to inspect.
 
     Returns:
-        Dictionary of all annotations of the object.
+        Dictionary of annotations of the class or object.
     """
-    if isinstance(obj, type):
-        return _get_annotations(obj)
+    if isinstance(cls_or_obj, type):
+        return _get_annotations(cls_or_obj)
     else:
-        return _get_annotations(type(obj))
+        return _get_annotations(type(cls_or_obj))
 
 
 @overload
-def get_metadata(obj: Any, /, *, type: None = None) -> list[Any]: ...
+def get_metadata(annotation: Any, /, *, type: None = None) -> list[Any]: ...
 @overload
-def get_metadata(obj: Any, /, *, type: type[T]) -> list[T]: ...
-def get_metadata(obj: Any, /, *, type: Any = None) -> Any:
-    """Return all metadata of given object.
+def get_metadata(annotation: Any, /, *, type: type[T]) -> list[T]: ...
+def get_metadata(annotation: Any, /, *, type: Any = None) -> Any:
+    """Return metadata of given annotation.
 
     Args:
-        obj: Object to inspect.
+        annotation: Annotation to inspect.
+        type: Type of metadata to filter. If specified,
+            only metadata of the given type will be returned.
+            Otherwise, all metadata will be returned.
 
     Returns:
-        List of all metadata of the object.
+        List of metadata of the annotation.
     """
-    metadata = get_args(obj)[1:] if has_metadata(obj) else ()
+    metadata = get_args(annotation)[1:] if has_metadata(annotation) else ()
 
     if type is None:
         return list(metadata)
@@ -77,40 +102,40 @@ def get_metadata(obj: Any, /, *, type: Any = None) -> Any:
         return [item for item in metadata if isinstance(item, type)]
 
 
-def get_subannotations(obj: Any, /) -> list[Any]:
-    """Return all sub-annotations of given object.
+def get_subannotations(annotation: Any, /) -> list[Any]:
+    """Return sub-annotations of given annotation.
 
     Args:
-        obj: Object to inspect.
+        annotation: Annotation to inspect.
 
     Returns:
-        List of all sub-annotations of the object.
+        List of sub-annotations of the annotation.
     """
-    if is_literal(annotation := get_annotation(obj)):
+    if is_literal(annotation := del_metadata(annotation)):
         return []
     else:
         return list(get_args(annotation))
 
 
-def has_metadata(obj: Any, /) -> bool:
-    """Check if given object has metadata.
+def has_metadata(annotation: Any, /) -> bool:
+    """Check if given annotation has metadata.
 
     Args:
-        obj: Object to inspect.
+        annotation: Annotation to inspect.
 
     Returns:
-        True if the object has metadata. False otherwise.
+        ``True`` if the annotation has metadata. ``False`` otherwise.
     """
-    return get_origin(obj) is Annotated
+    return get_origin(annotation) is Annotated
 
 
-def is_literal(obj: Any, /) -> bool:
-    """Check if given object is a literal type.
+def is_literal(annotation: Any, /) -> bool:
+    """Check if given annotation is a literal type.
 
     Args:
-        obj: Object to inspect.
+        annotation: Annotation to inspect.
 
     Returns:
-        True if the object is a literal type. False otherwise.
+        ``True`` if the annotation is a literal type. ``False`` otherwise.
     """
-    return get_origin(obj) is Literal
+    return get_origin(annotation) is Literal

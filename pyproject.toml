@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.10,<4.0"
 dependencies = [
     "packaging>=24",
-    "pandas>=2",
+    "pandas>=2.1",
     "readonlydict>=2",
     "typing-extensions>=4",
 ]
@@ -64,4 +64,3 @@ reportArgumentType = "warning"
 reportCallIssue = "warning"
 reportIncompatibleMethodOverride = "warning"
 reportNoOverloadImplementation = "warning"
-reportUnknownMemberType = "warning"
