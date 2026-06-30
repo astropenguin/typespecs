@@ -11,14 +11,13 @@ __all__ = [
 # standard library
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from itertools import repeat
 from typing import TYPE_CHECKING, Annotated, Any, overload
 
 # dependencies
 import pandas as pd
 from readonlydict import Items, ReadonlyDict
 from typing_extensions import NotRequired, Self, TypedDict
-from .frame import Resolution, collapse, concat, fillna, no_silent_downcasting
+from .frame import Resolution, collapse, concat, fillna
 from .typing import del_metadata, get_annotations, get_metadata, get_subannotations
 
 
@@ -225,48 +224,24 @@ def from_annotation(
     Returns:
         Created specification DataFrame.
     """
-    if obj is Ellipsis:
-        # workaround for Python 3.10 and 3.11
-        return new(None if type is None else {type: Ellipsis}, index)
-
-    annotation = del_metadata(obj, recursive=True)
-
-    if type is not None:
-        obj = Annotated[obj, Spec({type: ITSELF})]
-
-    specs = [
-        {key: annotation if val == ITSELF else val for key, val in spec.items()}
-        for spec in get_metadata(obj, type=Spec)
-    ]
-
-    if specs:
-        root = collapse(concat(map(new, specs, repeat(index))), conflict)
-    else:
-        root = new(None, index)
-
-    if depth == 0:
-        return fillna(root, default)
-
-    sub: list[pd.DataFrame] = []
-
-    for subindex, subannotation in enumerate(get_subannotations(obj)):
-        sub.append(
-            from_annotation(
-                subannotation,
-                conflict=conflict,
-                default=pd.NA,
-                depth=None if depth is None else depth - 1,
-                index=f"{index}{separator}{subindex}",
-                merge=False,
-                separator=separator,
-                type=type,
-            ),
-        )
+    parsed = parse_annotation(
+        obj,
+        depth=depth,
+        index=index,
+        separator=separator,
+        type=type,
+    )
 
     if merge:
-        return fillna(collapse(concat([*sub, root]), conflict), default)
+        collapsed = collapse(parsed, conflict)
     else:
-        return fillna(concat([root, *sub]), default)
+        collapsed = concat(
+            collapse(frame, conflict)
+            for _, frame in parsed.groupby(group_keys=False, level=0)
+        )
+
+    collapsed.index = collapsed.index.get_level_values(0)
+    return fillna(collapsed, default)
 
 
 def from_annotations(
@@ -325,25 +300,98 @@ def from_annotations(
     if frames:
         return fillna(concat(frames), default)
     else:
-        return new(None, None)
-
-
-def new(
-    data: Mapping[str, Any] | None = None,
-    index: Iterable[str] | None = None,
-    /,
-) -> pd.DataFrame:
-    """Create a new single-row specification DataFrame."""
-    if data is None:
         return pd.DataFrame(
             None,
-            None if index is None else [index],
+            pd.Index([], dtype=str),
             pd.Index([], dtype=str),
             dtype=object,
         )
-    else:
-        return pd.DataFrame(
-            [data],
-            None if index is None else [index],
-            dtype=object,
+
+
+def parse_annotation(
+    annotation: Any,
+    /,
+    *,
+    depth: int | None = None,
+    index: str = "root",
+    separator: str = "/",
+    type: str | None = "type",
+) -> pd.DataFrame:
+    """Parse type specifications in given annotation.
+
+    Args:
+        annotation: Annotation to inspect.
+        depth: Maximum depth of sub-annotations to search.
+            If it is ``None``, all sub-annotations will be searched.
+        index: Root index of the created DataFrame.
+        separator: Separator for concatenating root and sub-indices.
+        type: Name of the column for the metadata-stripped annotations.
+            If it is ``None``, the type column will not be created.
+
+    Returns:
+        DataFrame of the parsed type specifications.
+    """
+    if annotation is Ellipsis:
+        return parse_spec({} if type is None else {type: Ellipsis}, index)
+
+    if type is not None:
+        annotation = Annotated[annotation, Spec({type: ITSELF})]
+
+    bare = del_metadata(annotation, recursive=True)
+    main: list[pd.DataFrame] = []
+    subs: list[pd.DataFrame] = []
+
+    for subindex, spec in enumerate(get_metadata(annotation, type=Spec)):
+        main.append(
+            parse_spec(
+                {k: bare if v == ITSELF else v for k, v in spec.items()},
+                index,
+                subindex,
+            )
         )
+
+    if not main:
+        main.append(parse_spec({}, index))
+
+    if depth != 0:
+        for subindex, subann in enumerate(get_subannotations(annotation)):
+            subs.append(
+                parse_annotation(
+                    subann,
+                    depth=None if depth is None else depth - 1,
+                    index=f"{index}{separator}{subindex}",
+                    separator=separator,
+                    type=type,
+                )
+            )
+
+    return concat([*subs, *main])
+
+
+def parse_spec(
+    spec: Mapping[str, Any],
+    index: str,
+    subindex: int = 0,
+    /,
+) -> pd.DataFrame:
+    """Parse given type specification.
+
+    Args:
+        spec: Type specification to parse.
+        index: Index of the created DataFrame.
+        subindex: Sub-index of the created DataFrame.
+
+    Returns:
+        DataFrame of the parsed type specification.
+    """
+    return pd.DataFrame(
+        data=[spec],
+        index=pd.MultiIndex.from_arrays(
+            [
+                pd.Index([index], dtype=str),
+                pd.Index([subindex], dtype=int),
+            ]
+        ),
+        columns=pd.Index(spec, dtype=str),
+        dtype=object,
+    )
