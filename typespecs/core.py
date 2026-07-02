@@ -233,15 +233,13 @@ def from_annotation(
     )
 
     if merge:
-        collapsed = collapse(parsed, conflict)
+        frame = collapse(parsed, conflict)
     else:
-        collapsed = concat(
-            collapse(frame, conflict)
-            for _, frame in parsed.groupby(group_keys=False, level=0)
-        )
+        groups = parsed.groupby(group_keys=False, level=0)
+        frame = concat(collapse(group, conflict) for _, group in groups)
 
-    collapsed.index = collapsed.index.get_level_values(0)
-    return fillna(collapsed, default)
+    frame.index = frame.index.get_level_values(0)
+    return fillna(frame, default)
 
 
 def from_annotations(
@@ -284,18 +282,22 @@ def from_annotations(
     frames: list[pd.DataFrame] = []
 
     for index, annotation in obj.items():
-        frames.append(
-            from_annotation(
-                annotation,
-                conflict=conflict,
-                default=pd.NA,
-                depth=depth,
-                index=index,
-                merge=merge,
-                separator=separator,
-                type=type,
-            )
+        parsed = parse_annotation(
+            annotation,
+            depth=depth,
+            index=index,
+            separator=separator,
+            type=type,
         )
+
+        if merge:
+            frame = collapse(parsed, conflict)
+        else:
+            groups = parsed.groupby(group_keys=False, level=0)
+            frame = concat(collapse(group, conflict) for _, group in groups)
+
+        frame.index = frame.index.get_level_values(0)
+        frames.append(frame)
 
     if frames:
         return fillna(concat(frames), default)
