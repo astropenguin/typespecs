@@ -1,0 +1,7 @@
+typespecs.frame module
+======================
+
+.. automodule:: typespecs.frame
+   :members:
+   :show-inheritance:
+   :undoc-members:
