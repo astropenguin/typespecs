@@ -1,8 +1,13 @@
 [
     {
-        "name": "10.0 (latest)",
-        "version": "10.0.1",
+        "name": "10.1 (latest)",
+        "version": "10.1.0",
         "url": "https://astropenguin.github.io/typespecs/"
+    },
+    {
+        "name": "10.0",
+        "version": "10.0.1",
+        "url": "https://astropenguin.github.io/typespecs/10.0.1/"
     },
     {
         "name": "9.0",
