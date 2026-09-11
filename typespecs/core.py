@@ -9,7 +9,7 @@ __all__ = [
 ]
 
 # standard library
-from collections.abc import Iterable, Mapping
+from collections.abc import Hashable, Iterable, Iterator, Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Annotated, Any, overload
 
@@ -17,8 +17,26 @@ from typing import TYPE_CHECKING, Annotated, Any, overload
 import pandas as pd
 from readonlydict import Items, ReadonlyDict
 from typing_extensions import NotRequired, Self, TypedDict
-from .frame import Resolution, collapse, concat, fillna
-from .typing import del_metadata, get_annotations, get_metadata, get_subannotations
+from .engine import (
+    Multiple,
+    Resolver,
+    fill,
+    group as group_,
+    merge as merge_,
+    pop,
+    sort,
+)
+from .typing import (
+    del_metadata,
+    get_annotations,
+    get_metadata,
+    get_subannotations,
+)
+
+# constants
+CONFIG = "__typespecs_config__"
+INDEX = "__typespec_index__"
+INF = float("inf")
 
 
 class Config(TypedDict):
@@ -29,7 +47,7 @@ class Config(TypedDict):
     over the default behavior of ``typespecs.from_annotated``.
     """
 
-    conflict: NotRequired[Mapping[str, Resolution] | Resolution]
+    conflict: NotRequired[Multiple[Resolver]]
     """Resolution strategy for conflicts between metadata.
     Either a single resolution or a mapping of column names
     to resolutions is accepted. As built-in resolutions,
@@ -44,7 +62,7 @@ class Config(TypedDict):
     If it is ``None``, the data column will not be created.
     """
 
-    default: NotRequired[Mapping[str, Any] | Any]
+    default: NotRequired[Multiple[Any]]
     """Default value for each column. Either a single value
     or a mapping of column names to values is accepted.
     If the specified columns are not present in the created specification
@@ -113,9 +131,9 @@ class Spec(ReadonlyDict[str, Any]):
 def from_annotated(
     obj: Any,
     /,
-    conflict: Mapping[str, Resolution] | Resolution = "override",
+    conflict: Multiple[Resolver] = "override",
     data: str | None = "data",
-    default: Mapping[str, Any] | Any = pd.NA,
+    default: Multiple[Any] = pd.NA,
     depth: int | None = None,
     merge: bool = True,
     separator: str = "/",
@@ -154,7 +172,7 @@ def from_annotated(
         the configuration settings defined in it will take precedence
         over the arguments passed to this function.
     """
-    config = getattr(obj, "__typespecs_config__", {})
+    config = getattr(obj, CONFIG, {})
     conflict = config.get("conflict", conflict)
     data = config.get("data", data)
     default = config.get("default", default)
@@ -172,7 +190,7 @@ def from_annotated(
             spec = Spec({data: getattr(obj, index, pd.NA)})
             annotations[index] = Annotated[annotation, spec]
 
-    annotations.pop("__typespecs_config__", None)
+    annotations.pop(CONFIG, None)
 
     return from_annotations(
         annotations,
@@ -189,8 +207,8 @@ def from_annotation(
     obj: Any,
     /,
     *,
-    conflict: Mapping[str, Resolution] | Resolution = "override",
-    default: Mapping[str, Any] | Any = pd.NA,
+    conflict: Multiple[Resolver] = "override",
+    default: Multiple[Any] = pd.NA,
     depth: int | None = None,
     index: str = "root",
     merge: bool = True,
@@ -224,30 +242,23 @@ def from_annotation(
     Returns:
         Created specification DataFrame.
     """
-    parsed = parse_annotation(
+    specs = pre(
         obj,
+        conflict=conflict,
         depth=depth,
         index=index,
-        separator=separator,
+        merge=merge,
         type=type,
     )
-
-    if merge:
-        frame = collapse(parsed, conflict)
-    else:
-        groups = parsed.groupby(group_keys=False, level=0)
-        frame = concat(collapse(group, conflict) for _, group in groups)
-
-    frame.index = frame.index.get_level_values(0)
-    return fillna(frame, default)
+    return post(specs, default=default, separator=separator)
 
 
 def from_annotations(
     obj: Mapping[str, Any],
     /,
     *,
-    conflict: Mapping[str, Resolution] | Resolution = "override",
-    default: Mapping[str, Any] | Any = pd.NA,
+    conflict: Multiple[Resolver] = "override",
+    default: Multiple[Any] = pd.NA,
     depth: int | None = None,
     merge: bool = True,
     separator: str = "/",
@@ -279,121 +290,101 @@ def from_annotations(
     Returns:
         Created specification DataFrame.
     """
-    frames: list[pd.DataFrame] = []
+    specs: list[dict[str, Any]] = []
 
     for index, annotation in obj.items():
-        parsed = parse_annotation(
-            annotation,
-            depth=depth,
-            index=index,
-            separator=separator,
-            type=type,
+        specs.extend(
+            pre(
+                annotation,
+                conflict=conflict,
+                depth=depth,
+                index=index,
+                merge=merge,
+            )
         )
 
-        if merge:
-            frame = collapse(parsed, conflict)
-        else:
-            groups = parsed.groupby(group_keys=False, level=0)
-            frame = concat(collapse(group, conflict) for _, group in groups)
-
-        frame.index = frame.index.get_level_values(0)
-        frames.append(frame)
-
-    if frames:
-        return fillna(concat(frames), default)
-    else:
-        return pd.DataFrame(
-            None,
-            pd.Index([], dtype=str),
-            pd.Index([], dtype=str),
-            dtype=object,
-        )
+    return post(specs, default=default, separator=separator)
 
 
-def parse_annotation(
+def find(
     annotation: Any,
     /,
     *,
     depth: int | None = None,
-    index: str = "root",
-    separator: str = "/",
+    index: tuple[Hashable, ...] = ("root",),
     type: str | None = "type",
-) -> pd.DataFrame:
-    """Parse type specifications in given annotation.
+) -> Iterator[dict[str, Any]]:
+    """Find all type specifications in given annotation."""
+    itself = del_metadata(annotation, recursive=True)
 
-    Args:
-        annotation: Annotation to inspect.
-        depth: Maximum depth of sub-annotations to search.
-            If it is ``None``, all sub-annotations will be searched.
-        index: Root index of the created DataFrame.
-        separator: Separator for concatenating root and sub-indices.
-        type: Name of the column for the metadata-stripped annotations.
-            If it is ``None``, the type column will not be created.
+    if type is None:
+        yield {INDEX: (*index, INF)}
+    else:
+        yield {INDEX: (*index, INF), type: itself}
 
-    Returns:
-        DataFrame of the parsed type specifications.
-    """
-    if annotation is Ellipsis:
-        return parse_spec({} if type is None else {type: Ellipsis}, index)
-
-    if type is not None:
-        annotation = Annotated[annotation, Spec({type: ITSELF})]
-
-    bare = del_metadata(annotation, recursive=True)
-    main: list[pd.DataFrame] = []
-    subs: list[pd.DataFrame] = []
-
-    for subindex, spec in enumerate(get_metadata(annotation, type=Spec)):
-        main.append(
-            parse_spec(
-                {k: bare if v == ITSELF else v for k, v in spec.items()},
-                index,
-                subindex,
-            )
-        )
-
-    if not main:
-        main.append(parse_spec({}, index))
+    for order, spec in enumerate(get_metadata(annotation, type=Spec)):
+        yield {
+            INDEX: (*index, INF, order),
+            **{k: itself if v == ITSELF else v for k, v in spec.items()},
+        }
 
     if depth != 0:
-        for subindex, subann in enumerate(get_subannotations(annotation)):
-            subs.append(
-                parse_annotation(
-                    subann,
-                    depth=None if depth is None else depth - 1,
-                    index=f"{index}{separator}{subindex}",
-                    separator=separator,
-                    type=type,
-                )
+        for order, subann in enumerate(get_subannotations(annotation)):
+            yield from find(
+                subann,
+                depth=None if depth is None else depth - 1,
+                index=(*index, order),
             )
 
-    return concat([*subs, *main])
 
-
-def parse_spec(
-    spec: Mapping[str, Any],
-    index: str,
-    subindex: int = 0,
+def pre(
+    annotation: Any,
     /,
-) -> pd.DataFrame:
-    """Parse given type specification.
+    conflict: Multiple[Resolver] = "override",
+    depth: int | None = None,
+    index: str = "root",
+    merge: bool = True,
+    type: str | None = "type",
+) -> list[dict[str, Any]]:
+    """Create a list of type specifications from given annotation."""
 
-    Args:
-        spec: Type specification to parse.
-        index: Index of the created DataFrame.
-        subindex: Sub-index of the created DataFrame.
+    def key_of(strdict: dict[str, Any], /) -> tuple[Hashable, ...]:
+        return strdict[INDEX][: strdict[INDEX].index(INF)]
 
-    Returns:
-        DataFrame of the parsed type specification.
-    """
-    return pd.DataFrame(
-        data=[spec],
-        index=pd.MultiIndex.from_arrays(
-            [
-                pd.Index([index], dtype=str),
-                pd.Index([subindex], dtype=int),
-            ]
-        ),
-        columns=pd.Index(spec, dtype=str),
-        dtype=object,
+    found = sort(
+        find(annotation, depth=depth, index=(index,), type=type),
+        INDEX,
     )
+
+    if merge:
+        return sort(
+            [merge_(found, conflict)],
+            INDEX,
+            reverse=True,
+        )
+    else:
+        return sort(
+            [merge_(group, conflict) for group in group_(found, key_of)],
+            INDEX,
+            reverse=True,
+        )
+
+
+def post(
+    specs: list[dict[str, Any]],
+    /,
+    default: Multiple[Any] = pd.NA,
+    separator: str = "/",
+) -> pd.DataFrame:
+    """Create a specification DataFrame from given type specifications."""
+
+    def to_index(path: tuple[Hashable, ...], /) -> str:
+        return separator.join(map(str, path[: path.index(INF)]))
+
+    index = list(map(to_index, pop(specs, INDEX)))
+
+    return pd.DataFrame(
+        data=fill(specs, default),
+        index=index,
+        dtype=object,
+    ).sort_index(axis=1)

@@ -1,7 +1,7 @@
 __all__ = [
     # submodules
     "core",
-    "frame",
+    "engine",
     "typing",
     # aliases
     "ITSELF",
@@ -16,5 +16,5 @@ __version__ = "10.1.0"
 
 
 # dependencies
-from . import core, frame, typing
+from . import core, engine, typing
 from .core import *
