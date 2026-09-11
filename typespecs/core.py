@@ -24,7 +24,6 @@ from .engine import (
     group as group_,
     merge as merge_,
     pop,
-    rename,
     sort,
 )
 from .typing import (
@@ -37,7 +36,6 @@ from .typing import (
 # constants
 CONFIG = "__typespecs_config__"
 INDEX = "__typespec_index__"
-TYPE = "__typespec_type__"
 INF = float("inf")
 
 
@@ -244,8 +242,15 @@ def from_annotation(
     Returns:
         Created specification DataFrame.
     """
-    specs = pre(obj, conflict=conflict, depth=depth, index=index, merge=merge)
-    return post(specs, default=default, separator=separator, type=type)
+    specs = pre(
+        obj,
+        conflict=conflict,
+        depth=depth,
+        index=index,
+        merge=merge,
+        type=type,
+    )
+    return post(specs, default=default, separator=separator)
 
 
 def from_annotations(
@@ -298,7 +303,7 @@ def from_annotations(
             )
         )
 
-    return post(specs, default=default, separator=separator, type=type)
+    return post(specs, default=default, separator=separator)
 
 
 def find(
@@ -307,13 +312,20 @@ def find(
     *,
     depth: int | None = None,
     index: tuple[Hashable, ...] = ("root",),
+    type: str | None = "type",
 ) -> Iterator[dict[str, Any]]:
     """Find all type specifications in given annotation."""
+    itself = del_metadata(annotation, recursive=True)
+
+    if type is None:
+        yield {INDEX: (*index, INF)}
+    else:
+        yield {INDEX: (*index, INF), type: itself}
+
     for order, spec in enumerate(get_metadata(annotation, type=Spec)):
         yield {
             INDEX: (*index, INF, order),
-            TYPE: (type := del_metadata(annotation, recursive=True)),
-            **{k: type if v == ITSELF else v for k, v in spec.items()},
+            **{k: itself if v == ITSELF else v for k, v in spec.items()},
         }
 
     if depth != 0:
@@ -332,13 +344,17 @@ def pre(
     depth: int | None = None,
     index: str = "root",
     merge: bool = True,
+    type: str | None = "type",
 ) -> list[dict[str, Any]]:
     """Create a list of type specifications from given annotation."""
 
     def key_of(strdict: dict[str, Any], /) -> tuple[Hashable, ...]:
         return strdict[INDEX][: strdict[INDEX].index(INF)]
 
-    found = sort(find(annotation, depth=depth, index=(index,)), INDEX)
+    found = sort(
+        find(annotation, depth=depth, index=(index,), type=type),
+        INDEX,
+    )
 
     if merge:
         return sort(
@@ -359,7 +375,6 @@ def post(
     /,
     default: Multiple[Any] = pd.NA,
     separator: str = "/",
-    type: str | None = "type",
 ) -> pd.DataFrame:
     """Create a specification DataFrame from given type specifications."""
 
@@ -367,11 +382,6 @@ def post(
         return separator.join(map(str, path[: path.index(INF)]))
 
     index = list(map(to_index, pop(specs, INDEX)))
-
-    if type is None:
-        pop(specs, TYPE)
-    else:
-        specs = rename(specs, TYPE, type)
 
     return pd.DataFrame(
         data=fill(specs, default),

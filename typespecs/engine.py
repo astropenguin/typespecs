@@ -1,4 +1,4 @@
-__all__ = ["fill", "group", "merge", "pop", "rename", "sort"]
+__all__ = ["fill", "group", "merge", "pop", "sort"]
 
 # standard library
 from collections import defaultdict
@@ -141,31 +141,6 @@ def pop(
             popped.append(strdict.pop(key))
 
     return popped
-
-
-def rename(
-    strdicts: Iterable[dict[str, Any]],
-    old: str,
-    new: str,
-    /,
-) -> list[dict[str, Any]]:
-    """Rename a key in the given string-key dicts.
-
-    Args:
-        strdicts: Iterable of string-key dicts to rename.
-        old: Old key to rename from.
-        new: New key to rename to.
-
-    Returns:
-        List of renamed string-key dicts.
-    """
-    renamed = [strdict.copy() for strdict in strdicts]
-
-    for strdict in renamed:
-        if old in strdict:
-            strdict[new] = strdict.pop(old)
-
-    return renamed
 
 
 def sort(
