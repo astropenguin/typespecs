@@ -102,7 +102,7 @@ ITSELF = ItselfType()
 """Sentinel object specifying metadata-stripped annotation itself."""
 
 
-class Spec(ReadonlyDict[str, Any]):
+class Spec(ReadonlyDict[Hashable, Any]):
     """Type specification.
 
     This is a subclass of the read-only dictionary without any runtime modifications.
@@ -114,16 +114,16 @@ class Spec(ReadonlyDict[str, Any]):
         @overload
         def __new__(cls, **kwargs: Any) -> Self: ...
         @overload
-        def __new__(cls, iterable: Items[str, Any], /, **kwargs: Any) -> Self: ...
+        def __new__(cls, iterable: Items[Hashable, Any], /, **kwargs: Any) -> Self: ...
         @overload
-        def __new__(cls, mapping: Mapping[str, Any], /, **kwargs: Any) -> Self: ...
+        def __new__(cls, mapping: Mapping[Hashable, Any], /, **kwargs: Any) -> Self: ...
 
         @overload
         @classmethod
-        def fromkeys(cls, iterable: Iterable[str], /) -> Self: ...
+        def fromkeys(cls, iterable: Iterable[Hashable], /) -> Self: ...
         @overload
         @classmethod
-        def fromkeys(cls, iterable: Iterable[str], value: Any, /) -> Self: ...
+        def fromkeys(cls, iterable: Iterable[Hashable], value: Any, /) -> Self: ...
 
         def __or__(self, other: Mapping[str, Any], /) -> Self: ...
 
@@ -290,7 +290,7 @@ def from_annotations(
     Returns:
         Created specification DataFrame.
     """
-    specs: list[dict[str, Any]] = []
+    specs: list[dict[Hashable, Any]] = []
 
     for index, annotation in obj.items():
         specs.extend(
@@ -300,6 +300,7 @@ def from_annotations(
                 depth=depth,
                 index=index,
                 merge=merge,
+                type=type,
             )
         )
 
@@ -313,7 +314,7 @@ def find(
     depth: int | None = None,
     index: tuple[Hashable, ...] = ("root",),
     type: str | None = "type",
-) -> Iterator[dict[str, Any]]:
+) -> Iterator[dict[Hashable, Any]]:
     """Find all type specifications in given annotation."""
     itself = del_metadata(annotation, recursive=True)
 
@@ -345,33 +346,33 @@ def pre(
     index: str = "root",
     merge: bool = True,
     type: str | None = "type",
-) -> list[dict[str, Any]]:
+) -> list[dict[Hashable, Any]]:
     """Create a list of type specifications from given annotation."""
 
-    def key_of(strdict: dict[str, Any], /) -> tuple[Hashable, ...]:
-        return strdict[INDEX][: strdict[INDEX].index(INF)]
+    def key_of(spec: dict[Hashable, Any], /) -> tuple[Hashable, ...]:
+        return spec[INDEX][: spec[INDEX].index(INF)]
 
-    found = sort(
+    specs = sort(
         find(annotation, depth=depth, index=(index,), type=type),
         INDEX,
     )
 
     if merge:
         return sort(
-            [merge_(found, conflict)],
+            [merge_(specs, conflict)],
             INDEX,
             reverse=True,
         )
     else:
         return sort(
-            [merge_(group, conflict) for group in group_(found, key_of)],
+            [merge_(group, conflict) for group in group_(specs, key_of)],
             INDEX,
             reverse=True,
         )
 
 
 def post(
-    specs: list[dict[str, Any]],
+    specs: list[dict[Hashable, Any]],
     /,
     default: Multiple[Any] = pd.NA,
     separator: str = "/",
