@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Annotated, Any, overload
 import pandas as pd
 from readonlydict import Items, ReadonlyDict
 from typing_extensions import NotRequired, Self, TypedDict
-from .engine import (
+from .mapping import (
     Multiple,
     Resolver,
     fill,
