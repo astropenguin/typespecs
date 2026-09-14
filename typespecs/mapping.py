@@ -35,7 +35,7 @@ def fill(
         filler: Value(s) to fill missing keys with.
 
     Returns:
-        List of filled mappings.
+        List of filled dictionaries.
     """
     mappings = list(mappings)
     fillers: Mapping[Hashable, Any]
