@@ -2,180 +2,175 @@ __all__ = ["fill", "group", "merge", "pop", "sort"]
 
 # standard library
 from collections import defaultdict
-from collections.abc import Callable, Hashable, Iterable, Mapping
-from typing import Any, Literal, TypeVar, cast
+from collections.abc import Callable, Hashable, Iterable, Mapping, MutableMapping
+from itertools import product
+from typing import Any, Literal, Protocol, TypeVar, cast
 
 # dependencies
 import pandas as pd
 
 # type hints
-TAny = TypeVar("TAny")
-Multiple = Mapping[str, TAny] | TAny
+TKey = TypeVar("TKey", bound=Hashable)
+TValue = TypeVar("TValue")
+TMapping = TypeVar("TMapping", bound=Mapping[Hashable, Any])
+Multiple = Mapping[Hashable, TValue] | TValue
 Resolver = Callable[[Any, Any], Any] | Literal["override", "update"]
 
 
+class SortKey(Protocol):
+    """Protocol for keys for sorting."""
+
+    def __lt__(self, other: Any, /) -> bool: ...
+
+
 def fill(
-    strdicts: Iterable[dict[str, Any]],
-    filler: Multiple[Any] = pd.NA,
+    mappings: Iterable[Mapping[TKey, TValue]],
+    filler: Multiple[Any],
     /,
-) -> list[dict[str, Any]]:
-    """Fill missing keys in the given string-key dicts.
+) -> list[dict[Hashable, Any]]:
+    """Fill missing keys in the given mappings.
 
     Args:
-        strdicts: Iterable of string-key dicts to fill.
+        mappings: Iterable of mappings to fill.
         filler: Value(s) to fill missing keys with.
 
     Returns:
-        List of filled string-key dicts.
+        List of filled mappings.
     """
-    strdicts = list(strdicts)
-    fillers: dict[str, Any]
+    mappings = list(mappings)
+    fillers: Mapping[Hashable, Any]
 
     if isinstance(filler, Mapping):
-        fillers = cast(dict[str, Any], filler)
+        fillers = dict.fromkeys(keys_of(mappings), pd.NA)
+        fillers.update(cast(Mapping[Hashable, Any], filler))
     else:
-        fillers = dict.fromkeys(keys_of(strdicts), filler)
+        fillers = dict.fromkeys(keys_of(mappings), filler)
 
-    filled = [strdict.copy() for strdict in strdicts]
+    filled = cast(
+        list[dict[Hashable, Any]],
+        [dict(mapping) for mapping in mappings],
+    )
 
-    for key in keys_of(filled) | fillers.keys():
-        for strdict in filled:
-            if key not in strdict:
-                strdict[key] = fillers.get(key, pd.NA)
+    for mapping, key in product(filled, fillers):
+        mapping.setdefault(key, fillers[key])
 
     return filled
 
 
 def group(
-    strdicts: Iterable[dict[str, Any]],
-    key: Callable[[dict[str, Any]], Any] | str,
+    mappings: Iterable[TMapping],
+    key: Hashable | Callable[[TMapping], Hashable],
     /,
-) -> list[list[dict[str, Any]]]:
-    """Group the given string-key dicts.
+) -> list[list[TMapping]]:
+    """Group the given mappings by the given key.
 
     Args:
-        strdicts: Iterable of string-key dicts to group.
+        mappings: Iterable of mappings to group.
         key: Key or function to group by.
 
     Returns:
-        List of groups of string-key dicts.
+        List of groups of mappings.
     """
 
-    def key_of(strdict: dict[str, Any], /) -> Hashable:
-        match key:
-            case str():
-                return strdict[key]
-            case Callable():
-                return key(strdict)
-            case _:
-                raise ValueError(f"Invalid key: {key!r}")
+    def key_of(mapping: TMapping, /) -> Hashable:
+        return key(mapping) if callable(key) else mapping[key]
 
-    groups: dict[Hashable, list[dict[str, Any]]] = defaultdict(list)
+    groups: dict[Hashable, list[TMapping]] = defaultdict(list)
 
-    for strdict in strdicts:
-        groups[key_of(strdict)].append(strdict)
+    for mapping in mappings:
+        groups[key_of(mapping)].append(mapping)
 
     return list(groups.values())
 
 
 def merge(
-    strdicts: Iterable[dict[str, Any]],
-    resolver: Multiple[Resolver] = "override",
+    mappings: Iterable[Mapping[TKey, TValue]],
+    resolver: Multiple[Resolver],
     /,
-) -> dict[str, Any]:
-    """Merge the given string-key dicts into a single one.
+) -> dict[TKey, TValue]:
+    """Merge the given mappings into a single dictionary.
 
     Args:
-        strdicts: Iterable of string-key dicts to merge.
+        mappings: Iterable of mappings to merge.
         resolver: Function(s) to resolve conflicts.
 
     Returns:
-        Merged string-key dict.
+        Merged dictionary.
     """
-    strdicts = list(strdicts)
-    resolvers: dict[str, Resolver]
+    mappings = list(mappings)
+    resolvers: Mapping[Hashable, Resolver]
 
     if isinstance(resolver, Mapping):
-        resolvers = cast(dict[str, Resolver], resolver)
+        resolvers = dict.fromkeys(keys_of(mappings), override)
+        resolvers.update(cast(Mapping[Hashable, Resolver], resolver))
     else:
-        resolvers = dict.fromkeys(keys_of(strdicts), resolver)
+        resolvers = dict.fromkeys(keys_of(mappings), resolver)
 
-    merged: dict[str, Any] = {}
+    merged: dict[TKey, TValue] = {}
 
-    for strdict in strdicts:
-        for key, val in strdict.items():
-            resolver = resolvers.get(key, override)
-
-            if resolver == "override":
+    for mapping in mappings:
+        for key, val in mapping.items():
+            if (resolver := resolvers[key]) == "override":
                 resolver = override
 
             if resolver == "update":
                 resolver = update
 
-            if key in merged:
-                merged[key] = resolver(merged[key], val)
-            else:
-                merged[key] = val
+            merged[key] = resolver(merged.get(key, pd.NA), val)
 
     return merged
 
 
 def pop(
-    strdicts: Iterable[dict[str, Any]],
-    key: str,
+    mappings: Iterable[MutableMapping[TKey, TValue]],
+    key: TKey,
     /,
-) -> list[Any]:
-    """Remove a key from the given string-key dicts.
+) -> list[TValue]:
+    """Remove a key from the given mappings in-place.
 
     Args:
-        strdicts: Iterable of string-key dicts to remove.
+        mappings: Iterable of mappings to remove the key from.
         key: Key to be removed.
 
     Returns:
         List of removed values.
     """
-    popped: list[Any] = []
+    popped: list[TValue] = []
 
-    for strdict in strdicts:
-        if key in strdict:
-            popped.append(strdict.pop(key))
+    for mapping in mappings:
+        if key in mapping:
+            popped.append(mapping.pop(key))
 
     return popped
 
 
 def sort(
-    strdicts: Iterable[dict[str, Any]],
-    key: Callable[[dict[str, Any]], Any] | str,
+    mappings: Iterable[TMapping],
+    key: Hashable | Callable[[TMapping], SortKey],
     /,
     *,
     reverse: bool = False,
-) -> list[dict[str, Any]]:
-    """Sort the given string-key dicts.
+) -> list[TMapping]:
+    """Sort the given mappings.
 
     Args:
-        strdicts: Iterable of string-key dicts to sort.
+        mappings: Iterable of mappings to sort.
         key: Key or function to sort by.
         reverse: Whether to sort in reverse order.
 
     Returns:
-        List of sorted string-key dicts.
+        List of sorted mappings.
     """
 
-    def key_of(strdict: dict[str, Any], /) -> Any:
-        match key:
-            case str():
-                return strdict[key]
-            case Callable():
-                return key(strdict)
-            case _:
-                raise ValueError(f"Invalid key: {key!r}")
+    def key_of(mapping: TMapping, /) -> SortKey:
+        return key(mapping) if callable(key) else mapping[key]
 
-    return sorted(strdicts, key=key_of, reverse=reverse)
+    return sorted(mappings, key=key_of, reverse=reverse)
 
 
-def keys_of(strdicts: Iterable[dict[str, Any]], /) -> set[str]:
-    """Return a set of all keys in the given string-key dicts."""
-    return {key for strdict in strdicts for key in strdict}
+def keys_of(mappings: Iterable[Mapping[TKey, Any]], /) -> set[TKey]:
+    """Return a set of all keys in the given mappings."""
+    return {key for mapping in mappings for key in mapping}
 
 
 def override(old: Any, new: Any, /) -> Any:
