@@ -35,7 +35,7 @@ from .typing import (
 
 # constants
 CONFIG = "__typespecs_config__"
-INDEX = "__typespec_index__"
+INDICES = "__typespec_indices__"
 INF = float("inf")
 
 
@@ -312,20 +312,20 @@ def find(
     /,
     *,
     depth: int | None = None,
-    index: tuple[Hashable, ...] = ("root",),
+    indices: tuple[Hashable, ...] = ("root",),
     type: str | None = "type",
 ) -> Iterator[dict[Hashable, Any]]:
-    """Find all type specifications in given annotation."""
+    """Find all type specifications (with indices) in given annotation."""
     itself = del_metadata(annotation, recursive=True)
 
     if type is None:
-        yield {INDEX: (*index, INF)}
+        yield {INDICES: (*indices, INF)}
     else:
-        yield {INDEX: (*index, INF), type: itself}
+        yield {INDICES: (*indices, INF), type: itself}
 
     for order, spec in enumerate(get_metadata(annotation, type=Spec)):
         yield {
-            INDEX: (*index, INF, order),
+            INDICES: (*indices, INF, order),
             **{k: itself if v == ITSELF else v for k, v in spec.items()},
         }
 
@@ -334,7 +334,7 @@ def find(
             yield from find(
                 subann,
                 depth=None if depth is None else depth - 1,
-                index=(*index, order),
+                indices=(*indices, order),
             )
 
 
@@ -350,23 +350,23 @@ def pre(
     """Create a list of type specifications from given annotation."""
 
     def key_of(spec: dict[Hashable, Any], /) -> tuple[Hashable, ...]:
-        return spec[INDEX][: spec[INDEX].index(INF)]
+        return spec[INDICES][: spec[INDICES].index(INF)]
 
     specs = sort(
-        find(annotation, depth=depth, index=(index,), type=type),
-        INDEX,
+        find(annotation, depth=depth, indices=(index,), type=type),
+        INDICES,
     )
 
     if merge:
         return sort(
             [merge_(specs, conflict)],
-            INDEX,
+            INDICES,
             reverse=True,
         )
     else:
         return sort(
             [merge_(group, conflict) for group in group_(specs, key_of)],
-            INDEX,
+            INDICES,
             reverse=True,
         )
 
@@ -379,10 +379,10 @@ def post(
 ) -> pd.DataFrame:
     """Create a specification DataFrame from given type specifications."""
 
-    def to_index(path: tuple[Hashable, ...], /) -> str:
-        return separator.join(map(str, path[: path.index(INF)]))
+    def to_index(indices: tuple[Hashable, ...], /) -> str:
+        return separator.join(map(str, indices[: indices.index(INF)]))
 
-    index = list(map(to_index, pop(specs, INDEX)))
+    index = list(map(to_index, pop(specs, INDICES)))
 
     return pd.DataFrame(
         data=fill(specs, default),
