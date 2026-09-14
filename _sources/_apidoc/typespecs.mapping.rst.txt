@@ -1,0 +1,7 @@
+typespecs.mapping module
+========================
+
+.. automodule:: typespecs.mapping
+   :members:
+   :show-inheritance:
+   :undoc-members:
