@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Annotated, Any, overload
 import pandas as pd
 from readonlydict import Items, ReadonlyDict
 from typing_extensions import NotRequired, Self, TypedDict
-from .engine import (
+from .mapping import (
     Multiple,
     Resolver,
     fill,
@@ -35,7 +35,7 @@ from .typing import (
 
 # constants
 CONFIG = "__typespecs_config__"
-INDEX = "__typespec_index__"
+INDICES = "__typespec_indices__"
 INF = float("inf")
 
 
@@ -102,7 +102,7 @@ ITSELF = ItselfType()
 """Sentinel object specifying metadata-stripped annotation itself."""
 
 
-class Spec(ReadonlyDict[str, Any]):
+class Spec(ReadonlyDict[Hashable, Any]):
     """Type specification.
 
     This is a subclass of the read-only dictionary without any runtime modifications.
@@ -114,16 +114,16 @@ class Spec(ReadonlyDict[str, Any]):
         @overload
         def __new__(cls, **kwargs: Any) -> Self: ...
         @overload
-        def __new__(cls, iterable: Items[str, Any], /, **kwargs: Any) -> Self: ...
+        def __new__(cls, iterable: Items[Hashable, Any], /, **kwargs: Any) -> Self: ...
         @overload
-        def __new__(cls, mapping: Mapping[str, Any], /, **kwargs: Any) -> Self: ...
+        def __new__(cls, mapping: Mapping[Hashable, Any], /, **kwargs: Any) -> Self: ...
 
         @overload
         @classmethod
-        def fromkeys(cls, iterable: Iterable[str], /) -> Self: ...
+        def fromkeys(cls, iterable: Iterable[Hashable], /) -> Self: ...
         @overload
         @classmethod
-        def fromkeys(cls, iterable: Iterable[str], value: Any, /) -> Self: ...
+        def fromkeys(cls, iterable: Iterable[Hashable], value: Any, /) -> Self: ...
 
         def __or__(self, other: Mapping[str, Any], /) -> Self: ...
 
@@ -290,7 +290,7 @@ def from_annotations(
     Returns:
         Created specification DataFrame.
     """
-    specs: list[dict[str, Any]] = []
+    specs: list[dict[Hashable, Any]] = []
 
     for index, annotation in obj.items():
         specs.extend(
@@ -300,6 +300,7 @@ def from_annotations(
                 depth=depth,
                 index=index,
                 merge=merge,
+                type=type,
             )
         )
 
@@ -311,20 +312,20 @@ def find(
     /,
     *,
     depth: int | None = None,
-    index: tuple[Hashable, ...] = ("root",),
+    indices: tuple[Hashable, ...] = ("root",),
     type: str | None = "type",
-) -> Iterator[dict[str, Any]]:
-    """Find all type specifications in given annotation."""
+) -> Iterator[dict[Hashable, Any]]:
+    """Find all type specifications (with indices) in given annotation."""
     itself = del_metadata(annotation, recursive=True)
 
     if type is None:
-        yield {INDEX: (*index, INF)}
+        yield {INDICES: (*indices, INF)}
     else:
-        yield {INDEX: (*index, INF), type: itself}
+        yield {INDICES: (*indices, INF), type: itself}
 
     for order, spec in enumerate(get_metadata(annotation, type=Spec)):
         yield {
-            INDEX: (*index, INF, order),
+            INDICES: (*indices, INF, order),
             **{k: itself if v == ITSELF else v for k, v in spec.items()},
         }
 
@@ -333,7 +334,7 @@ def find(
             yield from find(
                 subann,
                 depth=None if depth is None else depth - 1,
-                index=(*index, order),
+                indices=(*indices, order),
             )
 
 
@@ -345,43 +346,43 @@ def pre(
     index: str = "root",
     merge: bool = True,
     type: str | None = "type",
-) -> list[dict[str, Any]]:
+) -> list[dict[Hashable, Any]]:
     """Create a list of type specifications from given annotation."""
 
-    def key_of(strdict: dict[str, Any], /) -> tuple[Hashable, ...]:
-        return strdict[INDEX][: strdict[INDEX].index(INF)]
+    def key_of(spec: dict[Hashable, Any], /) -> tuple[Hashable, ...]:
+        return spec[INDICES][: spec[INDICES].index(INF)]
 
-    found = sort(
-        find(annotation, depth=depth, index=(index,), type=type),
-        INDEX,
+    specs = sort(
+        find(annotation, depth=depth, indices=(index,), type=type),
+        INDICES,
     )
 
     if merge:
         return sort(
-            [merge_(found, conflict)],
-            INDEX,
+            [merge_(specs, conflict)],
+            INDICES,
             reverse=True,
         )
     else:
         return sort(
-            [merge_(group, conflict) for group in group_(found, key_of)],
-            INDEX,
+            [merge_(group, conflict) for group in group_(specs, key_of)],
+            INDICES,
             reverse=True,
         )
 
 
 def post(
-    specs: list[dict[str, Any]],
+    specs: list[dict[Hashable, Any]],
     /,
     default: Multiple[Any] = pd.NA,
     separator: str = "/",
 ) -> pd.DataFrame:
     """Create a specification DataFrame from given type specifications."""
 
-    def to_index(path: tuple[Hashable, ...], /) -> str:
-        return separator.join(map(str, path[: path.index(INF)]))
+    def to_index(indices: tuple[Hashable, ...], /) -> str:
+        return separator.join(map(str, indices[: indices.index(INF)]))
 
-    index = list(map(to_index, pop(specs, INDEX)))
+    index = list(map(to_index, pop(specs, INDICES)))
 
     return pd.DataFrame(
         data=fill(specs, default),

@@ -1,7 +1,7 @@
 __all__ = [
     # submodules
     "core",
-    "engine",
+    "mapping",
     "typing",
     # aliases
     "ITSELF",
@@ -12,9 +12,9 @@ __all__ = [
     "from_annotation",
     "from_annotations",
 ]
-__version__ = "10.1.0"
+__version__ = "11.0.0"
 
 
 # dependencies
-from . import core, engine, typing
+from . import core, mapping, typing
 from .core import *
