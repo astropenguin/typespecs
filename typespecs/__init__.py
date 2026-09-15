@@ -6,7 +6,7 @@ __all__ = [
     # aliases
     "ITSELF",
     "Config",
-    "ItselfType",
+    "Consts",
     "Spec",
     "from_annotated",
     "from_annotation",
@@ -18,3 +18,7 @@ __version__ = "11.0.1"
 # dependencies
 from . import core, mapping, typing
 from .core import *
+
+# constants
+ITSELF = Consts.ITSELF
+"""Sentinel for specifying metadata-stripped annotation itself."""
