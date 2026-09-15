@@ -21,7 +21,7 @@ from typing_extensions import (
 )
 
 # type hints
-T = TypeVar("T")
+TAny = TypeVar("TAny")
 
 
 def del_metadata(annotation: Any, /, *, recursive: bool = False) -> Any:
@@ -81,7 +81,7 @@ def get_annotations(cls_or_obj: Any, /) -> dict[str, Any]:
 @overload
 def get_metadata(annotation: Any, /, *, type: None = None) -> list[Any]: ...
 @overload
-def get_metadata(annotation: Any, /, *, type: type[T]) -> list[T]: ...
+def get_metadata(annotation: Any, /, *, type: type[TAny]) -> list[TAny]: ...
 def get_metadata(annotation: Any, /, *, type: Any = None) -> Any:
     """Return metadata of given annotation.
 
