@@ -11,7 +11,7 @@ __all__ = [
 # standard library
 from collections.abc import Hashable, Iterable, Iterator, Mapping
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Annotated, Any, overload
+from typing import TYPE_CHECKING, Annotated, Any, TypeVar, overload
 
 # dependencies
 import pandas as pd
@@ -35,8 +35,11 @@ from .typing import (
 
 # constants
 CONFIG = "__typespecs_config__"
-INDICES = "__typespec_indices__"
+INDICES = "__typespecs_indices__"
 INF = float("inf")
+
+# type hints
+TKey = TypeVar("TKey", bound=Hashable)
 
 
 class Config(TypedDict):
@@ -112,20 +115,23 @@ class Spec(ReadonlyDict[Hashable, Any]):
     if TYPE_CHECKING:
 
         @overload
+        def __new__(cls, iterable: Items[TKey, Any], /, **kwargs: Any) -> Self: ...
+        @overload
+        def __new__(cls, mapping: Mapping[TKey, Any], /, **kwargs: Any) -> Self: ...
+        @overload
         def __new__(cls, **kwargs: Any) -> Self: ...
-        @overload
-        def __new__(cls, iterable: Items[Hashable, Any], /, **kwargs: Any) -> Self: ...
-        @overload
-        def __new__(cls, mapping: Mapping[Hashable, Any], /, **kwargs: Any) -> Self: ...
+        def __new__(cls, *args: Any, **kwargs: Any) -> Any: ...
 
         @overload
         @classmethod
-        def fromkeys(cls, iterable: Iterable[Hashable], /) -> Self: ...
+        def fromkeys(cls, iterable: Iterable[TKey], /) -> Self: ...
         @overload
         @classmethod
-        def fromkeys(cls, iterable: Iterable[Hashable], value: Any, /) -> Self: ...
+        def fromkeys(cls, iterable: Iterable[TKey], value: Any, /) -> Self: ...
+        @classmethod
+        def fromkeys(cls, *args: Any, **kwargs: Any) -> Any: ...
 
-        def __or__(self, other: Mapping[str, Any], /) -> Self: ...
+        def __or__(self, other: Mapping[TKey, Any], /) -> Self: ...
 
 
 def from_annotated(
