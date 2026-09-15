@@ -59,5 +59,3 @@ dev = [
 
 [tool.pyright]
 typeCheckingMode = "strict"
-reportIncompatibleMethodOverride = "warning"
-reportNoOverloadImplementation = "warning"

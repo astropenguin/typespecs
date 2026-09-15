@@ -1094,7 +1094,7 @@ wheels = [
 
 [[package]]
 name = "pandas-stubs"
-version = "3.0.5.260730"
+version = "3.0.5.260914"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'win32'",
@@ -1111,9 +1111,9 @@ dependencies = [
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
     { name = "numpy", version = "2.5.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c2/d2/dea4a3a56b7b5f69c5fbca9f14625fcf28e1a39a657e9833d4a10bcac593/pandas_stubs-3.0.5.260730.tar.gz", hash = "sha256:f70a232c57d93a5a2c81f8a53953e10891a5374bc92652277deb325e2e4d0ff3", size = 114631, upload-time = "2026-07-30T14:31:42.271Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c1/93/8948ae6c1e1e3d6833596fd266f7be2d27c1451b8be094975ad42c5e842e/pandas_stubs-3.0.5.260914.tar.gz", hash = "sha256:3f6fc1f147f68fd89c007105e7c94a948acb4ecd7eb20dc1c02e153c4ed5c250", size = 117622, upload-time = "2026-09-14T16:42:35.065Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/60/c2/959caec5c46f484b5f8bb6def4b0cf7a45ba6acda26f12b75142d98cc5ae/pandas_stubs-3.0.5.260730-py3-none-any.whl", hash = "sha256:60e90e3e1eda6937e337e243cbe6217e151c11137cd7eddf832af537c7310bfd", size = 174807, upload-time = "2026-07-30T14:31:41.17Z" },
+    { url = "https://files.pythonhosted.org/packages/9a/cb/5ad79e02a556cc23fed5816de0109fa8af660c66cfa5f4af74c3e8d4cd26/pandas_stubs-3.0.5.260914-py3-none-any.whl", hash = "sha256:39a1300c5c5c55fdf609e3476805decce5d5015539a4dcb683449f8feaeee2fb", size = 177344, upload-time = "2026-09-14T16:42:33.771Z" },
 ]
 
 [[package]]
@@ -1440,14 +1440,14 @@ wheels = [
 
 [[package]]
 name = "readonlydict"
-version = "2.0.0"
+version = "2.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/af/40/ff39e0d75c72ab3b2d8a875db5417c925d224f4ce868dd5d4fe7552d9560/readonlydict-2.0.0.tar.gz", hash = "sha256:aa7493e8ae6db3893629af3bf1ee91497c77de799b42e9af9de4a350878b80a2", size = 75832, upload-time = "2026-06-18T02:42:35.426Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f8/d9/21ce3c72b854df1c4c36ffa6688afba8c59675579ba2916872f2dd47026e/readonlydict-2.1.1.tar.gz", hash = "sha256:4fabf13017ebb2bfde869be7a52043f47a29eb84d119a3c9397b8398ace05f80", size = 92858, upload-time = "2026-09-15T05:50:07.844Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/94/51/018dde3bb24d31b2ee0de13accf3e44021b2d562f486a800b2a3853ab7d0/readonlydict-2.0.0-py3-none-any.whl", hash = "sha256:01297648d3373f9d3238aa92a4cd6732641e5978d21301a91d51f8aa77b9e209", size = 6317, upload-time = "2026-06-18T02:42:36.351Z" },
+    { url = "https://files.pythonhosted.org/packages/64/3a/2f20787349112bafb972792025322e5ad02787bec69a16f9bb2fa38d94bb/readonlydict-2.1.1-py3-none-any.whl", hash = "sha256:d42e57fa8a301d8e5c8e221ed9c0fc8878cd4ad3e2fe5f6476b3feaed2a03d51", size = 6329, upload-time = "2026-09-15T05:50:08.681Z" },
 ]
 
 [[package]]
@@ -1760,7 +1760,7 @@ dev = [
     { name = "myst-parser", version = "4.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "myst-parser", version = "5.1.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pandas-stubs", version = "2.3.3.260113", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "pandas-stubs", version = "3.0.5.260730", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pandas-stubs", version = "3.0.5.260914", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pydata-sphinx-theme", version = "0.19.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "pydata-sphinx-theme", version = "0.21.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pyright" },
