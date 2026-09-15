@@ -1,7 +1,6 @@
 __all__ = [
-    "ITSELF",
     "Config",
-    "ItselfType",
+    "Consts",
     "Spec",
     "from_annotated",
     "from_annotation",
@@ -10,7 +9,7 @@ __all__ = [
 
 # standard library
 from collections.abc import Hashable, Iterable, Iterator, Mapping
-from dataclasses import dataclass
+from enum import Enum, auto
 from typing import TYPE_CHECKING, Annotated, Any, TypeVar, overload
 
 # dependencies
@@ -33,10 +32,20 @@ from .typing import (
     get_subannotations,
 )
 
+
 # constants
-CONFIG = "__typespecs_config__"
-INDICES = "__typespecs_indices__"
-INF = float("inf")
+class Consts(Enum):
+    """Constants for typespecs."""
+
+    INDICES = auto()
+    """Key for the indices of a type specification (internal use)."""
+
+    ITSELF = auto()
+    """Sentinel for specifying metadata-stripped annotation itself."""
+
+    def __repr__(self) -> str:
+        return f"<{self.name}>"
+
 
 # type hints
 TKey = TypeVar("TKey", bound=Hashable)
@@ -89,20 +98,6 @@ class Config(TypedDict):
     """Name of the column for the metadata-stripped annotations.
     If it is ``None``, the type column will not be created.
     """
-
-
-@dataclass(frozen=True)
-class ItselfType:
-    """Sentinel object specifying metadata-stripped annotation itself."""
-
-    __array_ufunc__ = None
-
-    def __repr__(self) -> str:
-        return "<ITSELF>"
-
-
-ITSELF = ItselfType()
-"""Sentinel object specifying metadata-stripped annotation itself."""
 
 
 class Spec(ReadonlyDict[Hashable, Any]):
@@ -178,7 +173,7 @@ def from_annotated(
         the configuration settings defined in it will take precedence
         over the arguments passed to this function.
     """
-    config = getattr(obj, CONFIG, {})
+    config = getattr(obj, "__typespecs_config__", {})
     conflict = config.get("conflict", conflict)
     data = config.get("data", data)
     default = config.get("default", default)
@@ -196,7 +191,7 @@ def from_annotated(
             spec = Spec({data: getattr(obj, index, pd.NA)})
             annotations[index] = Annotated[annotation, spec]
 
-    annotations.pop(CONFIG, None)
+    annotations.pop("__typespecs_config__", None)
 
     return from_annotations(
         annotations,
@@ -325,14 +320,17 @@ def find(
     itself = del_metadata(annotation, recursive=True)
 
     if type is None:
-        yield {INDICES: (*indices, INF)}
+        yield {Consts.INDICES: (*indices, float("inf"))}
     else:
-        yield {INDICES: (*indices, INF), type: itself}
+        yield {Consts.INDICES: (*indices, float("inf")), type: itself}
 
     for order, spec in enumerate(get_metadata(annotation, type=Spec)):
         yield {
-            INDICES: (*indices, INF, order),
-            **{k: itself if v == ITSELF else v for k, v in spec.items()},
+            Consts.INDICES: (*indices, float("inf"), order),
+            **{
+                key: itself if val is Consts.ITSELF else val
+                for key, val in spec.items()
+            },
         }
 
     if depth != 0:
@@ -355,24 +353,24 @@ def pre(
 ) -> list[dict[Hashable, Any]]:
     """Create a list of type specifications from given annotation."""
 
-    def key_of(spec: dict[Hashable, Any], /) -> tuple[Hashable, ...]:
-        return spec[INDICES][: spec[INDICES].index(INF)]
+    def to_key(spec: dict[Hashable, Any], /) -> tuple[Hashable, ...]:
+        return key_of(spec[Consts.INDICES])
 
     specs = sort(
         find(annotation, depth=depth, indices=(index,), type=type),
-        INDICES,
+        Consts.INDICES,
     )
 
     if merge:
         return sort(
             [merge_(specs, conflict)],
-            INDICES,
+            Consts.INDICES,
             reverse=True,
         )
     else:
         return sort(
-            [merge_(group, conflict) for group in group_(specs, key_of)],
-            INDICES,
+            [merge_(group, conflict) for group in group_(specs, to_key)],
+            Consts.INDICES,
             reverse=True,
         )
 
@@ -386,12 +384,17 @@ def post(
     """Create a specification DataFrame from given type specifications."""
 
     def to_index(indices: tuple[Hashable, ...], /) -> str:
-        return separator.join(map(str, indices[: indices.index(INF)]))
+        return separator.join(map(str, key_of(indices)))
 
-    index = list(map(to_index, pop(specs, INDICES)))
+    index = list(map(to_index, pop(specs, Consts.INDICES)))
 
     return pd.DataFrame(
         data=fill(specs, default),
         index=index,
         dtype=object,
     ).sort_index(axis=1)
+
+
+def key_of(indices: tuple[Hashable, ...], /) -> tuple[Hashable, ...]:
+    """Return the subset of the given indices that is valid for a key."""
+    return indices[: indices.index(float("inf"))]

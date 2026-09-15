@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from typing import Annotated as Ann
 
 # dependencies
-import typespecs as ts
 import pandas as pd
+import typespecs as ts
 from pandas.testing import assert_frame_equal
 
 
@@ -39,13 +39,6 @@ ANNOTATIONS = {
         ts.Spec(meta={"a": 0}),
     ],
 }
-
-
-def test_itself() -> None:
-    assert ts.ItselfType() == ts.ItselfType()
-    assert ts.ItselfType() == ts.ITSELF
-    assert ts.ItselfType() is not ts.ItselfType()
-    assert ts.ItselfType() is not ts.ITSELF
 
 
 def test_from_annotated() -> None:
