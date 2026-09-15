@@ -12,7 +12,7 @@ __all__ = [
     "from_annotation",
     "from_annotations",
 ]
-__version__ = "11.0.1"
+__version__ = "12.0.0"
 
 
 # dependencies
